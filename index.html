@@ -206,9 +206,9 @@
           <div class="dist-bar-fill" id="distBarFill" style="width:0%;background:var(--safe);"></div>
         </div>
         <div class="dist-bar-labels">
-          <span style="color:var(--danger)">◀ DANGER &lt;3m</span>
+          <span style="color:var(--safe)">◀ SAFE &gt;8m</span>
           <span style="color:var(--warn)">CAUTION &lt;8m</span>
-          <span style="color:var(--safe)">SAFE &gt;8m ▶</span>
+          <span style="color:var(--danger)">DANGER &lt;3m ▶</span>
         </div>
       </div>
 
@@ -306,13 +306,14 @@ const C = {
   interval: null,
   canvas: null,
   distance: null,
-  knownWidth: 150,   // cm
-  focalLength: 600,  // px (sane default, calibrated later)
+  knownWidth: 150,      // cm — real-world width of the target object
+  focalLength: 600,     // px — calibrated focal length
   lastPixelWidth: 0,
-  dangerDist: 3,     // m
-  warnDist: 8,       // m
+  dangerDist: 3,        // m
+  warnDist: 8,          // m
   lastVibeTime: 0,
-  smoothDist: null,  // smoothed distance for stability
+  smoothDist: null,     // exponentially smoothed distance for stability
+  noDetectCount: 0,     // FIX: was accessed as C._noDetectCount but never declared
 };
 
 function initApp() {
@@ -343,11 +344,11 @@ async function toggleCamera() {
       document.getElementById('camStatusDot').classList.add('live');
       document.getElementById('camStatusText').textContent = 'Live · scanning for obstacles…';
 
-      // offscreen canvas
+      // Offscreen canvas for pixel analysis (small size for performance)
       C.canvas = document.createElement('canvas');
       C.canvas.width = 320; C.canvas.height = 240;
 
-      C.interval = setInterval(scanFrame, 400); // scan every 400ms
+      C.interval = setInterval(scanFrame, 400); // scan every 400 ms
     } catch(e) {
       alert('Camera access denied or unavailable:\n' + e.message);
     }
@@ -371,6 +372,7 @@ function stopCamera() {
   document.getElementById('camStatusDot').classList.remove('live');
   document.getElementById('camStatusText').textContent = 'Camera off';
   C.smoothDist = null;
+  C.noDetectCount = 0;
   updateDistUI(null);
   updateAlert('safe', '📷 Camera disabled');
 }
@@ -382,12 +384,11 @@ function scanFrame() {
   if (!vid.videoWidth || !vid.videoHeight) return;
 
   const ctx = C.canvas.getContext('2d');
-  // Draw scaled-down frame for performance
   ctx.drawImage(vid, 0, 0, 320, 240);
   const dist = estimateDistance(ctx, 320, 240, vid.videoWidth, vid.videoHeight);
-  
+
   if (dist !== null) {
-    // Exponential smoothing to reduce jitter
+    C.noDetectCount = 0; // FIX: use C.noDetectCount (properly initialized in state)
     if (C.smoothDist === null) {
       C.smoothDist = dist;
     } else {
@@ -395,81 +396,78 @@ function scanFrame() {
     }
     updateDistUI(C.smoothDist);
   } else {
-    // If no detection, decay smoothed distance slowly then clear
-    if (C.smoothDist !== null) {
-      // Hold for 2 more frames then clear
-      C._noDetectCount = (C._noDetectCount || 0) + 1;
-      if (C._noDetectCount >= 3) {
-        C.smoothDist = null;
-        C._noDetectCount = 0;
-        updateDistUI(null);
-        document.getElementById('camStatusText').textContent = 'Scanning — no clear object detected';
-      }
+    C.noDetectCount++;
+    if (C.noDetectCount >= 3) {
+      C.smoothDist = null;
+      C.noDetectCount = 0;
+      updateDistUI(null);
+      document.getElementById('camStatusText').textContent = 'Scanning — no clear object detected';
     }
   }
-  if (dist !== null) C._noDetectCount = 0;
 }
 
 // ── DISTANCE ESTIMATION ──
-// Strategy: Find the most prominent connected dark region in the CENTER band
-// Uses edge detection + connected region search for robustness
+// Uses triangle similarity (pinhole camera model).
+// Detects the widest prominent dark region in the center band of the frame.
 function estimateDistance(ctx, W, H, realVideoW, realVideoH) {
-  // Sample a horizontal band in the middle-lower region (where rear car would appear)
+  // Sample a horizontal band in the middle-lower region (where a rear car would appear)
   const bandTop = Math.floor(H * 0.25);
-  const bandH = Math.floor(H * 0.55);
+  const bandH   = Math.floor(H * 0.55);
 
   const imgData = ctx.getImageData(0, bandTop, W, bandH);
   const px = imgData.data;
 
-  // 1. Compute per-column brightness average
-  const colBrightness = new Float32Array(W);
+  // 1. Compute per-column luminance average
+  const colLum = new Float32Array(W);
   for (let c = 0; c < W; c++) {
     let sum = 0;
     for (let r = 0; r < bandH; r++) {
-      const idx = (r * W + c) * 4;
-      sum += 0.299 * px[idx] + 0.587 * px[idx+1] + 0.114 * px[idx+2];
+      const i = (r * W + c) * 4;
+      sum += 0.299 * px[i] + 0.587 * px[i+1] + 0.114 * px[i+2];
     }
-    colBrightness[c] = sum / bandH;
+    colLum[c] = sum / bandH;
   }
 
-  // 2. Compute overall stats
-  let minB = 255, maxB = 0, sumB = 0;
+  // 2. Compute scene statistics
+  let minL = 255, maxL = 0, sumL = 0;
   for (let c = 0; c < W; c++) {
-    if (colBrightness[c] < minB) minB = colBrightness[c];
-    if (colBrightness[c] > maxB) maxB = colBrightness[c];
-    sumB += colBrightness[c];
+    if (colLum[c] < minL) minL = colLum[c];
+    if (colLum[c] > maxL) maxL = colLum[c];
+    sumL += colLum[c];
   }
-  const avgB = sumB / W;
-  const contrast = maxB - minB;
+  const avgL    = sumL / W;
+  const contrast = maxL - minL;
 
-  // Need enough contrast to detect anything
+  // Require enough scene contrast to make a reliable detection
   if (contrast < 18) {
     document.getElementById('camStatusText').textContent = 'Low contrast — improve lighting';
     return null;
   }
 
-  // 3. Find columns that belong to the foreground (darker) object
-  // Adaptive threshold: columns significantly different from the background average
-  const bgEstimate = avgB + contrast * 0.1; // background tends to be brighter
-  const objectThreshold = avgB - contrast * 0.15; // darker than average = object
+  // FIX: Removed unused variable `bgEstimate` that was previously declared here.
+  //      Only the adaptive object threshold is needed.
+  //
+  // Adaptive threshold: a column is "object" (foreground) if its luminance is
+  // meaningfully below the scene average. We use a wider margin (25% of contrast)
+  // instead of the previous 15%, giving better detection across varying lighting.
+  const objectThreshold = avgL - contrast * 0.25;
 
-  // 4. Find the LARGEST connected run of "object" columns near the horizontal center
-  // Also, prefer runs that are centered in the frame (a rear car is usually centered)
+  // 3. Find the LARGEST connected run of "object" columns, preferring center-aligned ones
   const centerC = W / 2;
   let bestRun = { start: -1, len: 0, score: 0 };
   let curStart = -1, curLen = 0;
 
-  for (let c = 0; c < W; c++) {
-    const isObject = colBrightness[c] <= objectThreshold;
-    if (isObject) {
+  for (let c = 0; c <= W; c++) {
+    const isObj = c < W && colLum[c] <= objectThreshold;
+    if (isObj) {
       if (curStart < 0) curStart = c;
       curLen++;
     } else {
-      if (curLen >= 6) { // minimum 6 columns to count
+      if (curLen >= 6) {
         const runCenter = curStart + curLen / 2;
+        // Score: bigger runs win; slight penalty for being off-center
         const distFromCenter = Math.abs(runCenter - centerC);
-        // Score: prefer larger runs that are closer to center
-        const score = curLen * (1 - distFromCenter / W * 0.5);
+        const score = curLen * (1 - (distFromCenter / W) * 0.5);
         if (score > bestRun.score) {
           bestRun = { start: curStart, len: curLen, score };
         }
@@ -477,32 +475,26 @@ function estimateDistance(ctx, W, H, realVideoW, realVideoH) {
       curStart = -1; curLen = 0;
     }
   }
-  // Check last run
-  if (curLen >= 6) {
-    const runCenter = curStart + curLen / 2;
-    const distFromCenter = Math.abs(runCenter - centerC);
-    const score = curLen * (1 - distFromCenter / W * 0.5);
-    if (score > bestRun.score) bestRun = { start: curStart, len: curLen, score };
-  }
 
   if (bestRun.len < 6) {
     document.getElementById('camStatusText').textContent = 'No object detected — point at obstacle';
     return null;
   }
 
-  // 5. Scale pixel width from our 320px canvas to the actual video resolution
+  // 4. Scale detected pixel width from the 320-px canvas to the actual video resolution
   const scaleX = realVideoW / W;
   const realPixelWidth = bestRun.len * scaleX;
   C.lastPixelWidth = realPixelWidth;
   document.getElementById('pxWidthEl').textContent = Math.round(realPixelWidth) + ' px';
 
-  // 6. Triangle similarity: D = (realWidth_m × focalLength_px) / pixelWidth_px
-  const realWidthM = C.knownWidth / 100;
+  // 5. Triangle similarity: D = (realWidth_m × focalLength_px) / pixelWidth_px
+  const realWidthM = C.knownWidth / 100; // convert cm → m
   const dist = (realWidthM * C.focalLength) / realPixelWidth;
 
-  // Clamp to physically sensible range
+  // Clamp to a physically sensible range
   const clamped = Math.max(0.1, Math.min(50, dist));
-  document.getElementById('camStatusText').textContent = `Object: ${Math.round(realPixelWidth)}px wide · ${clamped.toFixed(1)}m`;
+  document.getElementById('camStatusText').textContent =
+    `Object: ${Math.round(realPixelWidth)}px wide · ${clamped.toFixed(1)}m`;
   return clamped;
 }
 
@@ -526,141 +518,147 @@ function captureFrame() {
 }
 
 // ── AUTO-CALIBRATE ──
+// Stand exactly 1 m from the object, then tap. Solves for focal length:
+//   F = pixelWidth × distance / realWidth = pixelWidth × 1 / (knownWidth / 100)
 function autoCalibrate() {
-  if (!C.camActive) { alert('Enable camera first, then stand exactly 1 metre from the object.'); return; }
+  if (!C.camActive) {
+    alert('Enable camera first, then stand exactly 1 metre from the object.');
+    return;
+  }
   const vid = document.getElementById('videoEl');
   if (!vid.videoWidth) { alert('Camera not ready yet.'); return; }
+
   const tmp = document.createElement('canvas');
   tmp.width = 320; tmp.height = 240;
   const ctx = tmp.getContext('2d');
   ctx.drawImage(vid, 0, 0, 320, 240);
-  
-  // Run detection
+
+  // Run detection to populate C.lastPixelWidth
   estimateDistance(ctx, 320, 240, vid.videoWidth, vid.videoHeight);
-  
+
   if (!C.lastPixelWidth || C.lastPixelWidth < 10) {
     alert('Could not detect object for calibration.\n\nMake sure:\n• You are exactly 1 metre from the object\n• Object fills a significant portion of frame\n• Good lighting and clear contrast');
     return;
   }
 
-  // At 1m: focalLength = pixelWidth * distance / realWidth
-  // distance = 1m, realWidth = knownWidth/100 m
-  // focalLength = pixelWidth * 1 / (knownWidth/100) = pixelWidth * 100 / knownWidth
-  // But we also need to account for the video/canvas scale
-  const vid2 = document.getElementById('videoEl');
-  const scaleX = vid2.videoWidth / 320;
-  const scaledPW = C.lastPixelWidth; // already scaled inside estimateDistance
-  const newFocal = Math.round(scaledPW * 1.0 / (C.knownWidth / 100));
-  const clamped = Math.max(50, Math.min(10000, newFocal));
-  
+  // FIX: Removed unused variable `scaleX` that was previously declared here.
+  // C.lastPixelWidth is already in original-video-pixel space (scaled inside estimateDistance).
+  const newFocal  = Math.round(C.lastPixelWidth / (C.knownWidth / 100));
+  const clamped   = Math.max(50, Math.min(10000, newFocal));
+
   C.focalLength = clamped;
   const slider = document.getElementById('calFocal');
-  slider.max = Math.max(2000, clamped + 500);
+  slider.max   = Math.max(2000, clamped + 500);
   slider.value = clamped;
   document.getElementById('calFocalVal').textContent = clamped + ' px';
-  
-  alert('✓ Calibrated!\nFocal length = ' + clamped + ' px\nDetected pixel width = ' + Math.round(C.lastPixelWidth) + ' px\n\nNow move closer/farther to test accuracy.');
+
+  alert(
+    '✓ Calibrated!\n' +
+    'Focal length = ' + clamped + ' px\n' +
+    'Detected pixel width = ' + Math.round(C.lastPixelWidth) + ' px\n\n' +
+    'Now move closer/farther to test accuracy.'
+  );
 }
 
 // ── DISTANCE UI ──
 function updateDistUI(dist) {
   const numEl = document.getElementById('distNum');
   const unitEl = document.getElementById('distUnit');
-  const subEl = document.getElementById('distSublabel');
-  const barEl = document.getElementById('distBarFill');
+  const subEl  = document.getElementById('distSublabel');
+  const barEl  = document.getElementById('distBarFill');
 
   if (dist === null) {
     numEl.textContent = '--';
-    numEl.className = 'dist-num safe';
+    numEl.className   = 'dist-num safe';
     unitEl.textContent = 'm';
-    subEl.textContent = 'No object detected';
-    barEl.style.width = '0%';
+    subEl.textContent  = 'No object detected';
+    barEl.style.width  = '0%';
     barEl.style.background = 'var(--safe)';
     updateRearViz(null);
     return;
   }
 
-  // Number display
+  // FIX: 100 m ≠ 1 km — unit should switch at 1000 m, not 100 m.
   const display = dist < 10 ? dist.toFixed(1) : Math.round(dist);
-  numEl.textContent = display;
-  unitEl.textContent = dist >= 100 ? 'km' : 'm';
+  numEl.textContent  = display;
+  unitEl.textContent = dist >= 1000 ? 'km' : 'm';
 
-  // Color and label
+  // Colour, label and alert level
   let cls, label, alertLevel, alertMsg;
   if (dist < C.dangerDist) {
-    cls = 'danger';
-    label = '⚠ DANGER — Collision risk! Brake immediately!';
+    cls        = 'danger';
+    label      = '⚠ DANGER — Collision risk! Brake immediately!';
     alertLevel = 'danger';
-    alertMsg = '🚨 DANGER: Rear collision risk — brake immediately!';
+    alertMsg   = '🚨 DANGER: Rear collision risk — brake immediately!';
     const now = Date.now();
     if (document.getElementById('vibCheck').checked && now - C.lastVibeTime > 2000) {
       if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
       C.lastVibeTime = now;
     }
   } else if (dist < C.warnDist) {
-    cls = 'warn';
-    label = '⚠ Caution — reduce speed, increase distance';
+    cls        = 'warn';
+    label      = '⚠ Caution — reduce speed, increase distance';
     alertLevel = 'warn';
-    alertMsg = '⚠ Caution: Obstacle approaching — slow down';
+    alertMsg   = '⚠ Caution: Obstacle approaching — slow down';
     const now = Date.now();
     if (document.getElementById('vibCheck').checked && now - C.lastVibeTime > 4000) {
       if (navigator.vibrate) navigator.vibrate([100, 100, 100]);
       C.lastVibeTime = now;
     }
   } else {
-    cls = 'safe';
-    label = '✓ Safe distance maintained';
+    cls        = 'safe';
+    label      = '✓ Safe distance maintained';
     alertLevel = 'safe';
-    alertMsg = '✓ Safe — obstacle at a comfortable distance';
+    alertMsg   = '✓ Safe — obstacle at a comfortable distance';
   }
 
   numEl.className = 'dist-num ' + cls;
   subEl.textContent = label;
   updateAlert(alertLevel, alertMsg);
 
-  // Bar — max visual scale = 20m (full bar = safe)
-  // Bar fills from 0 (danger) to 100% (safe/far)
-  const pct = Math.min(100, (dist / 20) * 100);
-  barEl.style.width = pct + '%';
-  barEl.style.background = dist < C.dangerDist ? 'var(--danger)' : dist < C.warnDist ? 'var(--warn)' : 'var(--safe)';
+  // FIX: Bar direction was inverted — it previously filled toward 100% as distance
+  // increased (safe), making a nearly full bar look "good" and empty look "danger".
+  // Correct behaviour: bar fills as the object gets CLOSER (more danger = more fill).
+  // Maximum visual scale = 20 m (empty bar). At 0 m the bar would be 100% full.
+  const maxScale = 20; // metres
+  const pct = Math.min(100, Math.max(0, (1 - dist / maxScale) * 100));
+  barEl.style.width      = pct + '%';
+  barEl.style.background = dist < C.dangerDist ? 'var(--danger)'
+                         : dist < C.warnDist   ? 'var(--warn)'
+                                                : 'var(--safe)';
 
   updateRearViz(dist);
 }
 
 // ── REAR VISUALIZER ──
-// Simulates how far the rear car icon is from your car
-// Container height: 100px, carYou at bottom, carObs moves from top to near bottom
+// Moves the obstacle car icon up/down to represent proximity.
+// Close → obs icon near bottom (close to your car). Far → obs icon near top.
 function updateRearViz(dist) {
-  const obsEl = document.getElementById('carObs');
+  const obsEl  = document.getElementById('carObs');
   const dashEl = document.getElementById('distDashes');
 
   if (dist === null) {
-    obsEl.style.top = '4px';
+    obsEl.style.top      = '4px';
     dashEl.style.display = 'none';
     return;
   }
 
-  // Map dist (0 to 20m+) → top position (75px = very close, 4px = far)
-  // Close = obs car near bottom (high top px value)
-  // Far   = obs car near top (low top px value)
-  const maxDist = 20; // distances beyond 20m all look "far"
+  // Map distance (0 – 20 m) to top-position range (6 px=far … 64 px=close)
+  const maxDist  = 20;
   const fraction = Math.min(dist / maxDist, 1); // 0=very close, 1=far
-
-  // top range: 6px (far) → 64px (close)
-  // When close, obs car's top is high → it's near your car
-  const topPx = 6 + (1 - fraction) * 58;
+  const topPx    = 6 + (1 - fraction) * 58;
   obsEl.style.top = Math.round(topPx) + 'px';
 
-  // Draw dashes between obs car (bottom of obs icon ~topPx+28) and your car (top ~68px)
+  // Dashed line between the two cars
   const obsBottom = topPx + 28;
-  const yourTop = 68;
-  const dashTop = obsBottom + 2;
+  const yourTop   = 68;
+  const dashTop   = obsBottom + 2;
   const dashHeight = Math.max(0, yourTop - dashTop - 2);
 
   if (dashHeight > 4) {
     dashEl.style.display = 'block';
-    dashEl.style.top = Math.round(dashTop) + 'px';
-    dashEl.style.height = Math.round(dashHeight) + 'px';
+    dashEl.style.top     = Math.round(dashTop) + 'px';
+    dashEl.style.height  = Math.round(dashHeight) + 'px';
   } else {
     dashEl.style.display = 'none';
   }
@@ -677,22 +675,23 @@ function updateAlert(level, msg) {
 
 // ── CALIBRATION ──
 function updateCalib() {
-  C.knownWidth = +document.getElementById('calWidth').value;
+  C.knownWidth  = +document.getElementById('calWidth').value;
   C.focalLength = +document.getElementById('calFocal').value;
-  document.getElementById('calWidthVal').textContent = C.knownWidth + ' cm';
+  document.getElementById('calWidthVal').textContent = C.knownWidth  + ' cm';
   document.getElementById('calFocalVal').textContent = C.focalLength + ' px';
 }
 
+// ── THRESHOLDS ──
 function updateThresholds() {
   C.dangerDist = +document.getElementById('dangerSlider').value;
-  C.warnDist = +document.getElementById('warnSlider').value;
+  C.warnDist   = +document.getElementById('warnSlider').value;
   document.getElementById('dangerVal').textContent = C.dangerDist.toFixed(1) + ' m';
-  document.getElementById('warnVal').textContent = C.warnDist + ' m';
-  // Zones label
+  document.getElementById('warnVal').textContent   = C.warnDist + ' m';
+  // Update bar labels to reflect current threshold values
   document.querySelector('.dist-bar-labels').innerHTML =
-    `<span style="color:var(--danger)">◀ DANGER &lt;${C.dangerDist}m</span>
+    `<span style="color:var(--safe)">◀ SAFE &gt;${C.warnDist}m</span>
      <span style="color:var(--warn)">CAUTION &lt;${C.warnDist}m</span>
-     <span style="color:var(--safe)">SAFE &gt;${C.warnDist}m ▶</span>`;
+     <span style="color:var(--danger)">DANGER &lt;${C.dangerDist}m ▶</span>`;
 }
 </script>
 </body>
