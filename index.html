@@ -20,8 +20,8 @@
   }
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   body { background:var(--bg); color:var(--text); font-family:'Exo 2',sans-serif; min-height:100vh; overflow-x:hidden; }
-
-  /* ── SPLASH ── */
+ 
+  /* SPLASH */
   #splash {
     position:fixed; inset:0; background:var(--bg);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -39,43 +39,40 @@
   .perm-text span { font-size:12px; color:var(--muted); }
   .start-btn { margin-top:1.8rem; background:var(--accent); color:#07090d; border:none; border-radius:50px; padding:16px 0; font-size:16px; font-weight:700; font-family:'Exo 2',sans-serif; cursor:pointer; width:100%; max-width:300px; letter-spacing:2px; text-transform:uppercase; transition:all 0.2s; box-shadow:0 0 24px rgba(41,182,246,0.25); }
   .start-btn:active { transform:scale(0.97); }
-
-  /* ── APP ── */
+ 
+  /* APP */
   #app { display:none; }
   header { display:flex; align-items:center; justify-content:space-between; padding:13px 18px 10px; border-bottom:1px solid var(--border); background:rgba(14,18,24,0.96); backdrop-filter:blur(10px); position:sticky; top:0; z-index:10; }
   .hlogo { font-family:'Exo 2',sans-serif; font-size:20px; font-weight:800; letter-spacing:1px; }
   .hlogo span { color:var(--safe); }
   .hbadge { font-size:11px; letter-spacing:2px; padding:4px 10px; border-radius:6px; background:rgba(41,182,246,0.1); color:var(--accent); border:1px solid rgba(41,182,246,0.2); font-family:'Share Tech Mono',monospace; }
-
-  main { padding:16px 16px; max-width:480px; margin:0 auto; }
-
-  /* ── ALERT ── */
+ 
+  main { padding:16px; max-width:480px; margin:0 auto; }
+ 
+  /* ALERT */
   .alert-box { border-radius:14px; padding:13px 16px; margin-bottom:14px; display:flex; align-items:center; gap:10px; font-size:14px; font-weight:600; border:1px solid; transition:all 0.3s; letter-spacing:0.3px; }
   .alert-box.safe { background:rgba(0,230,118,0.07); border-color:rgba(0,230,118,0.2); color:var(--safe); }
   .alert-box.warn { background:rgba(255,171,0,0.08); border-color:rgba(255,171,0,0.25); color:var(--warn); }
   .alert-box.danger { background:rgba(255,23,68,0.1); border-color:rgba(255,23,68,0.3); color:var(--danger); animation:shake 0.4s; }
-  @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-5px)} 40%,80%{transform:translateX(5px)} }
-
-  /* ── CAMERA ── */
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+ 
+  /* CAMERA */
   .cam-card { background:var(--bg2); border:1px solid var(--border); border-radius:20px; overflow:hidden; margin-bottom:14px; }
   .cam-header { display:flex; align-items:center; justify-content:space-between; padding:13px 18px; border-bottom:1px solid var(--border); }
   .cam-header-label { font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--muted); }
   .cam-toggle-btn { background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:6px 14px; font-size:12px; font-family:'Exo 2',sans-serif; cursor:pointer; font-weight:600; letter-spacing:1px; transition:all 0.2s; }
   .cam-toggle-btn.on { border-color:rgba(0,230,118,0.4); color:var(--safe); background:rgba(0,230,118,0.08); }
   .cam-body { position:relative; }
-  #videoEl { width:100%; height:200px; object-fit:cover; display:block; background:var(--bg3); }
-  .cam-overlay { position:absolute; inset:0; display:none; align-items:center; justify-content:center; pointer-events:none; }
-  .cam-overlay.show { display:flex; }
-  .detect-box { width:160px; height:100px; border:1.5px dashed var(--safe); border-radius:6px; opacity:0.7; position:relative; }
-  .detect-box::before { content:'SCAN ZONE'; position:absolute; top:-18px; left:50%; transform:translateX(-50%); font-size:9px; letter-spacing:2px; color:var(--safe); font-family:'Share Tech Mono',monospace; }
+  #videoEl { width:100%; height:210px; object-fit:cover; display:block; background:var(--bg3); }
+  #overlayCanvas { position:absolute; top:0; left:0; width:100%; height:210px; pointer-events:none; }
   .cam-off-msg { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:var(--muted); font-size:13px; }
   .cam-off-msg span { font-size:36px; }
   .cam-status-bar { padding:8px 18px; background:var(--bg3); font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--muted); display:flex; align-items:center; gap:8px; }
   .cam-status-dot { width:6px; height:6px; border-radius:50%; background:var(--muted); flex-shrink:0; }
   .cam-status-dot.live { background:var(--safe); animation:blink 1.5s infinite; }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-  /* ── DISTANCE DISPLAY ── */
+ 
+  /* DISTANCE */
   .dist-card { background:var(--bg2); border:1px solid var(--border); border-radius:20px; padding:20px 20px 16px; margin-bottom:14px; }
   .dist-title { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--muted); margin-bottom:12px; }
   .dist-main { display:flex; align-items:baseline; gap:8px; margin-bottom:8px; }
@@ -85,22 +82,19 @@
   .dist-num.danger { color:var(--danger); }
   .dist-unit { font-size:22px; color:var(--muted); font-weight:300; }
   .dist-sublabel { font-size:13px; color:var(--muted); margin-bottom:14px; min-height:20px; }
-
-  /* progress bar */
-  .dist-bar-wrap { margin-bottom:10px; }
-  .dist-bar-bg { background:var(--bg3); border-radius:6px; height:10px; overflow:hidden; position:relative; }
-  .dist-bar-fill { height:100%; border-radius:6px; transition:width 0.4s ease, background 0.4s; min-width:4px; }
+  .dist-bar-bg { background:var(--bg3); border-radius:6px; height:10px; overflow:hidden; }
+  .dist-bar-fill { height:100%; border-radius:6px; transition:width 0.4s ease, background 0.4s; min-width:3px; }
   .dist-bar-labels { display:flex; justify-content:space-between; margin-top:5px; font-size:10px; color:var(--muted); }
-
-  /* rear viz */
+ 
+  /* REAR VIZ */
   .rear-viz { background:var(--bg3); border-radius:14px; padding:14px; position:relative; margin-top:14px; height:130px; overflow:hidden; }
   .rview-label { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); text-align:center; margin-bottom:4px; }
   .rview-inner { position:relative; height:100px; }
   .car-you { position:absolute; bottom:4px; left:50%; transform:translateX(-50%); font-size:32px; z-index:2; }
   .car-obs { position:absolute; left:50%; transform:translateX(-50%); font-size:28px; z-index:2; transition:top 0.5s ease; top:10px; }
   .dist-dashes { position:absolute; left:50%; transform:translateX(-1px); width:2px; background:repeating-linear-gradient(to bottom, var(--accent) 0px, var(--accent) 5px, transparent 5px, transparent 10px); transition:all 0.5s ease; opacity:0.45; }
-
-  /* ── CALIBRATION ── */
+ 
+  /* CALIBRATION */
   .calib-card { background:var(--bg2); border:1px solid var(--border); border-radius:20px; padding:18px; margin-bottom:14px; }
   .calib-title { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
   .calib-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; font-size:14px; color:var(--muted); }
@@ -110,37 +104,37 @@
   .calib-info { background:var(--bg3); border-radius:10px; padding:12px; margin-top:12px; }
   .calib-info p { font-size:12px; color:var(--muted); line-height:1.6; }
   .calib-info strong { color:var(--accent); }
-
-  /* ── CONTROLS ── */
+ 
+  /* CONTROLS */
   .controls { display:flex; gap:10px; margin-bottom:14px; }
   .btn { flex:1; padding:14px; border-radius:14px; border:1px solid var(--border); background:var(--bg2); color:var(--text); font-size:14px; font-weight:600; font-family:'Exo 2',sans-serif; cursor:pointer; letter-spacing:1px; transition:all 0.2s; }
   .btn.primary { background:var(--accent); color:#07090d; border-color:var(--accent); }
-  .btn.on { background:rgba(255,23,68,0.15); border-color:rgba(255,23,68,0.4); color:var(--danger); }
+  .btn.stop { background:rgba(255,23,68,0.15); border-color:rgba(255,23,68,0.4); color:var(--danger); }
   .btn:active { transform:scale(0.97); }
-
-  /* ── SETTINGS ── */
+ 
+  /* SETTINGS */
   .settings-card { background:var(--bg2); border:1px solid var(--border); border-radius:20px; padding:18px; margin-bottom:14px; }
   .settings-title { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
   .setting-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; font-size:14px; color:var(--muted); }
   .setting-row:last-child { margin-bottom:0; }
   .setting-row input[type=range] { width:110px; accent-color:var(--safe); }
   .setting-val { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--safe); min-width:50px; text-align:right; }
-
-  /* ── INFO ── */
+ 
+  /* INFO */
   .info-card { background:var(--bg2); border:1px solid var(--border); border-radius:20px; padding:18px; margin-bottom:14px; font-size:13px; color:var(--muted); line-height:1.8; }
   .info-card strong { color:var(--text); }
   .info-card code { font-family:'Share Tech Mono',monospace; color:var(--accent); font-size:12px; }
-
+ 
   footer { text-align:center; padding:14px; font-size:10px; color:rgba(90,103,128,0.4); letter-spacing:2px; }
 </style>
 </head>
 <body>
-
+ 
 <!-- SPLASH -->
 <div id="splash">
   <div class="splash-logo">REAR<span>GUARD</span></div>
   <div class="splash-sub">Rear Obstacle Distance Monitor</div>
-  <p class="splash-desc">Use your rear camera to measure the distance from obstacles behind your vehicle in real-time.</p>
+  <p class="splash-desc">Use your rear camera to measure the distance from obstacles behind your vehicle in real-time using pinhole camera geometry.</p>
   <div class="perm-list">
     <div class="perm-item">
       <span class="perm-icon">📷</span>
@@ -153,22 +147,22 @@
   </div>
   <button class="start-btn" onclick="initApp()">ENABLE CAMERA</button>
 </div>
-
+ 
 <!-- APP -->
 <div id="app">
   <header>
     <div class="hlogo">REAR<span>GUARD</span></div>
     <div class="hbadge" id="camBadge">CAM: OFF</div>
   </header>
-
+ 
   <main>
-
+ 
     <!-- Alert -->
     <div class="alert-box safe" id="alertBox">
       <span id="alertIcon">📷</span>
       <span id="alertText">Enable camera to start distance monitoring</span>
     </div>
-
+ 
     <!-- Camera -->
     <div class="cam-card">
       <div class="cam-header">
@@ -177,13 +171,11 @@
       </div>
       <div class="cam-body">
         <video id="videoEl" autoplay playsinline muted></video>
+        <canvas id="overlayCanvas"></canvas>
         <div id="camOffMsg" class="cam-off-msg">
           <span>📷</span>
           <div>Camera not active</div>
           <div style="font-size:11px">Tap "Enable Camera" above</div>
-        </div>
-        <div class="cam-overlay" id="camOverlay">
-          <div class="detect-box"></div>
         </div>
       </div>
       <div class="cam-status-bar">
@@ -191,7 +183,7 @@
         <span id="camStatusText">Camera off · Enable to begin</span>
       </div>
     </div>
-
+ 
     <!-- Distance Display -->
     <div class="dist-card">
       <div class="dist-title">Rear Obstacle Distance</div>
@@ -200,18 +192,16 @@
         <div class="dist-unit" id="distUnit">m</div>
       </div>
       <div class="dist-sublabel" id="distSublabel">No object detected</div>
-
-      <div class="dist-bar-wrap">
-        <div class="dist-bar-bg">
-          <div class="dist-bar-fill" id="distBarFill" style="width:0%;background:var(--safe);"></div>
-        </div>
-        <div class="dist-bar-labels">
-          <span style="color:var(--safe)">◀ SAFE &gt;8m</span>
-          <span style="color:var(--warn)">CAUTION &lt;8m</span>
-          <span style="color:var(--danger)">DANGER &lt;3m ▶</span>
-        </div>
+ 
+      <div class="dist-bar-bg">
+        <div class="dist-bar-fill" id="distBarFill" style="width:0%;background:var(--safe);"></div>
       </div>
-
+      <div class="dist-bar-labels" id="barLabels">
+        <span style="color:var(--danger)">◀ DANGER &lt;3m</span>
+        <span style="color:var(--warn)">CAUTION &lt;8m</span>
+        <span style="color:var(--safe)">SAFE &gt;8m ▶</span>
+      </div>
+ 
       <!-- Rear View Visualizer -->
       <div class="rear-viz">
         <div class="rview-label">Rear-View Simulation</div>
@@ -222,37 +212,38 @@
         </div>
       </div>
     </div>
-
-    <!-- Camera Controls -->
+ 
+    <!-- Controls -->
     <div class="controls">
       <button class="btn primary" id="camMainBtn" onclick="toggleCamera()">▶ Start Camera</button>
       <button class="btn" onclick="captureFrame()">📸 Capture</button>
     </div>
-
+ 
     <!-- Calibration -->
     <div class="calib-card">
       <div class="calib-title">Camera Calibration</div>
       <div class="calib-row">
         <label>Object Real Width</label>
         <div style="display:flex;align-items:center;gap:8px;">
-          <input type="range" min="10" max="300" value="150" step="5" id="calWidth" oninput="updateCalib()">
-          <span class="calib-val" id="calWidthVal">150 cm</span>
+          <input type="range" min="10" max="300" value="180" step="5" id="calWidth" oninput="updateCalib()">
+          <span class="calib-val" id="calWidthVal">180 cm</span>
         </div>
       </div>
       <div class="calib-row">
         <label>Focal Length (px)</label>
         <div style="display:flex;align-items:center;gap:8px;">
-          <input type="range" min="50" max="2000" value="600" id="calFocal" oninput="updateCalib()">
-          <span class="calib-val" id="calFocalVal">600 px</span>
+          <input type="range" min="50" max="3000" value="700" step="10" id="calFocal" oninput="updateCalib()">
+          <span class="calib-val" id="calFocalVal">700 px</span>
         </div>
       </div>
       <div class="calib-info">
-        <p><strong>📐 Auto-Calibrate:</strong> Stand exactly <strong>1 metre</strong> from a wall or car, then tap:</p>
+        <p><strong>📐 Auto-Calibrate:</strong> Stand exactly <strong>1 metre</strong> from obstacle, point camera at it, then tap:</p>
         <button class="btn primary" onclick="autoCalibrate()" style="margin-top:10px;padding:10px;font-size:13px;">Auto-Calibrate at 1m</button>
         <p style="margin-top:10px;color:rgba(90,103,128,0.7);font-size:11px;">Formula: <code>D = (W × F) / P</code> · D=distance, W=real width, F=focal length, P=pixel width</p>
+        <p style="margin-top:6px;font-size:11px;color:var(--muted);">Last detected: <span id="pxWidthEl" style="font-family:'Share Tech Mono',monospace;color:var(--accent);">-- px</span></p>
       </div>
     </div>
-
+ 
     <!-- Thresholds -->
     <div class="settings-card">
       <div class="settings-title">Alert Thresholds</div>
@@ -266,104 +257,109 @@
       <div class="setting-row">
         <label>Warning Distance</label>
         <div style="display:flex;align-items:center;gap:8px;">
-          <input type="range" min="2" max="20" value="8" step="1" id="warnSlider" oninput="updateThresholds()">
-          <span class="setting-val" id="warnVal">8 m</span>
+          <input type="range" min="2" max="20" value="8" step="0.5" id="warnSlider" oninput="updateThresholds()">
+          <span class="setting-val" id="warnVal">8.0 m</span>
         </div>
       </div>
       <div class="setting-row">
         <label>Vibrate on Danger</label>
         <input type="checkbox" id="vibCheck" checked style="width:20px;height:20px;accent-color:var(--safe);">
       </div>
-      <div class="setting-row">
-        <label>Pixel Width Detected</label>
-        <span id="pxWidthEl" style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--muted);">-- px</span>
-      </div>
     </div>
-
+ 
     <!-- Info -->
     <div class="info-card">
       <strong>How Distance is Measured</strong>
-      <p style="margin-top:8px;">The app uses the triangle similarity (pinhole camera) principle. It looks for the largest, most prominent dark or contrasting object in the camera frame, measures its pixel width, and computes:</p>
-      <p style="margin-top:6px;"><code>Distance = (Real Width × Focal Length) / Pixel Width</code></p>
+      <p style="margin-top:8px;">Uses <em>pinhole camera triangle similarity</em>. Each frame is converted to grayscale, Gaussian-blurred to remove noise, then Otsu's adaptive threshold separates the obstacle from the background. The largest foreground blob in the central scan band is found, its pixel width measured, and distance computed:</p>
+      <p style="margin-top:8px;"><code>Distance = (Real Width × Focal Length) / Pixel Width</code></p>
       <p style="margin-top:8px;"><strong>Tips for best accuracy:</strong></p>
-      <ul style="padding-left:16px;margin-top:4px;color:var(--muted);">
+      <ul style="padding-left:16px;margin-top:4px;">
+        <li>Always Auto-Calibrate at exactly 1 metre first</li>
         <li>Good lighting — avoid dark environments</li>
-        <li>Calibrate at exactly 1 metre first</li>
-        <li>Object should have clear contrast from background</li>
-        <li>Works best with the rear bumper/body of a vehicle</li>
+        <li>Object must clearly contrast the background</li>
+        <li>Works best pointing at rear bumper of a vehicle</li>
       </ul>
     </div>
-
+ 
   </main>
   <footer>REARGUARD · OBSTACLE DISTANCE MONITOR</footer>
 </div>
-
+ 
 <script>
 // ── STATE ──
 const C = {
   camActive: false,
   stream: null,
   interval: null,
-  canvas: null,
   distance: null,
-  knownWidth: 150,      // cm — real-world width of the target object
-  focalLength: 600,     // px — calibrated focal length
+  knownWidth: 180,    // cm — default car width
+  focalLength: 700,   // px — calibrated per device
   lastPixelWidth: 0,
-  dangerDist: 3,        // m
-  warnDist: 8,          // m
+  dangerDist: 3,      // m
+  warnDist: 8,        // m
   lastVibeTime: 0,
-  smoothDist: null,     // exponentially smoothed distance for stability
-  noDetectCount: 0,     // FIX: was accessed as C._noDetectCount but never declared
+  smoothDist: null,
+  noDetectCount: 0,
+  videoW: 0,
+  videoH: 0,
 };
-
+ 
+// Fixed processing resolution
+const PROC_W = 320, PROC_H = 240;
+const procCanvas = document.createElement('canvas');
+procCanvas.width = PROC_W;
+procCanvas.height = PROC_H;
+const procCtx = procCanvas.getContext('2d', { willReadFrequently: true });
+ 
+let overlayCtx = null;
+ 
 function initApp() {
   document.getElementById('splash').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-  updateThresholds();
+  const ov = document.getElementById('overlayCanvas');
+  overlayCtx = ov.getContext('2d');
   updateCalib();
+  updateThresholds();
   updateDistUI(null);
 }
-
+ 
 // ── CAMERA ──
 async function toggleCamera() {
   if (!C.camActive) {
     try {
       C.stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width:{ ideal:1280 }, height:{ ideal:720 } }
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
       });
       const vid = document.getElementById('videoEl');
       vid.srcObject = C.stream;
+      await new Promise(resolve => { vid.onloadedmetadata = resolve; });
+      vid.play();
       C.camActive = true;
       document.getElementById('camOffMsg').style.display = 'none';
-      document.getElementById('camOverlay').classList.add('show');
       document.getElementById('camToggleBtn').textContent = 'Disable Camera';
       document.getElementById('camToggleBtn').classList.add('on');
       document.getElementById('camMainBtn').textContent = '⏹ Stop Camera';
-      document.getElementById('camMainBtn').className = 'btn on';
+      document.getElementById('camMainBtn').className = 'btn stop';
       document.getElementById('camBadge').textContent = 'CAM: LIVE';
       document.getElementById('camStatusDot').classList.add('live');
       document.getElementById('camStatusText').textContent = 'Live · scanning for obstacles…';
-
-      // Offscreen canvas for pixel analysis (small size for performance)
-      C.canvas = document.createElement('canvas');
-      C.canvas.width = 320; C.canvas.height = 240;
-
-      C.interval = setInterval(scanFrame, 400); // scan every 400 ms
-    } catch(e) {
-      alert('Camera access denied or unavailable:\n' + e.message);
+      C.interval = setInterval(scanFrame, 350);
+    } catch (e) {
+      alert('Camera error:\n' + e.message);
     }
   } else {
     stopCamera();
   }
 }
-
+ 
 function stopCamera() {
   clearInterval(C.interval);
   if (C.stream) C.stream.getTracks().forEach(t => t.stop());
   C.camActive = false; C.stream = null; C.interval = null;
+  C.smoothDist = null; C.noDetectCount = 0;
   document.getElementById('videoEl').srcObject = null;
   document.getElementById('camOffMsg').style.display = 'flex';
-  document.getElementById('camOverlay').classList.remove('show');
+  clearOverlay();
   document.getElementById('camToggleBtn').textContent = 'Enable Camera';
   document.getElementById('camToggleBtn').classList.remove('on');
   document.getElementById('camMainBtn').textContent = '▶ Start Camera';
@@ -371,33 +367,50 @@ function stopCamera() {
   document.getElementById('camBadge').textContent = 'CAM: OFF';
   document.getElementById('camStatusDot').classList.remove('live');
   document.getElementById('camStatusText').textContent = 'Camera off';
-  C.smoothDist = null;
-  C.noDetectCount = 0;
   updateDistUI(null);
-  updateAlert('safe', '📷 Camera disabled');
+  updateAlert('safe', '📷', 'Camera disabled');
 }
-
-// ── FRAME SCANNING ──
+ 
+function clearOverlay() {
+  const ov = document.getElementById('overlayCanvas');
+  if (overlayCtx) overlayCtx.clearRect(0, 0, ov.width, ov.height);
+}
+ 
+// ── SCAN FRAME ──
 function scanFrame() {
   if (!C.camActive) return;
   const vid = document.getElementById('videoEl');
   if (!vid.videoWidth || !vid.videoHeight) return;
-
-  const ctx = C.canvas.getContext('2d');
-  ctx.drawImage(vid, 0, 0, 320, 240);
-  const dist = estimateDistance(ctx, 320, 240, vid.videoWidth, vid.videoHeight);
-
-  if (dist !== null) {
-    C.noDetectCount = 0; // FIX: use C.noDetectCount (properly initialized in state)
-    if (C.smoothDist === null) {
-      C.smoothDist = dist;
-    } else {
-      C.smoothDist = 0.6 * C.smoothDist + 0.4 * dist;
-    }
+  C.videoW = vid.videoWidth;
+  C.videoH = vid.videoHeight;
+ 
+  procCtx.drawImage(vid, 0, 0, PROC_W, PROC_H);
+  const result = detectObject(procCtx, PROC_W, PROC_H);
+ 
+  if (result) {
+    // Scale pixel width from processing canvas back to real video resolution
+    const scaleX = C.videoW / PROC_W;
+    const realPixelWidth = result.width * scaleX;
+    C.lastPixelWidth = realPixelWidth;
+    document.getElementById('pxWidthEl').textContent = Math.round(realPixelWidth) + ' px';
+ 
+    // Triangle similarity: D = (realWidth_m × focalLength) / pixelWidth
+    const realWidthM = C.knownWidth / 100;
+    const rawDist = (realWidthM * C.focalLength) / realPixelWidth;
+    const dist = Math.max(0.1, Math.min(50, rawDist));
+ 
+    // Exponential smoothing — α=0.45 for snappy but stable response
+    C.smoothDist = C.smoothDist === null ? dist : 0.55 * C.smoothDist + 0.45 * dist;
+    C.noDetectCount = 0;
+ 
+    drawOverlay(result, vid);
+    document.getElementById('camStatusText').textContent =
+      'Object: ' + Math.round(realPixelWidth) + 'px wide · ' + C.smoothDist.toFixed(2) + ' m';
     updateDistUI(C.smoothDist);
   } else {
+    clearOverlay();
     C.noDetectCount++;
-    if (C.noDetectCount >= 3) {
+    if (C.noDetectCount >= 4) {
       C.smoothDist = null;
       C.noDetectCount = 0;
       updateDistUI(null);
@@ -405,293 +418,333 @@ function scanFrame() {
     }
   }
 }
-
-// ── DISTANCE ESTIMATION ──
-// Uses triangle similarity (pinhole camera model).
-// Detects the widest prominent dark region in the center band of the frame.
-function estimateDistance(ctx, W, H, realVideoW, realVideoH) {
-  // Sample a horizontal band in the middle-lower region (where a rear car would appear)
-  const bandTop = Math.floor(H * 0.25);
-  const bandH   = Math.floor(H * 0.55);
-
-  const imgData = ctx.getImageData(0, bandTop, W, bandH);
+ 
+// ── OBJECT DETECTION ──
+// Uses: grayscale → Gaussian blur → Otsu threshold → largest foreground blob
+function detectObject(ctx, W, H) {
+  const imgData = ctx.getImageData(0, 0, W, H);
   const px = imgData.data;
-
-  // 1. Compute per-column luminance average
-  const colLum = new Float32Array(W);
-  for (let c = 0; c < W; c++) {
-    let sum = 0;
-    for (let r = 0; r < bandH; r++) {
-      const i = (r * W + c) * 4;
-      sum += 0.299 * px[i] + 0.587 * px[i+1] + 0.114 * px[i+2];
-    }
-    colLum[c] = sum / bandH;
+ 
+  // Step 1: Convert to grayscale
+  const gray = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) {
+    const r = px[i * 4], g = px[i * 4 + 1], b = px[i * 4 + 2];
+    gray[i] = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
   }
-
-  // 2. Compute scene statistics
-  let minL = 255, maxL = 0, sumL = 0;
-  for (let c = 0; c < W; c++) {
-    if (colLum[c] < minL) minL = colLum[c];
-    if (colLum[c] > maxL) maxL = colLum[c];
-    sumL += colLum[c];
-  }
-  const avgL    = sumL / W;
-  const contrast = maxL - minL;
-
-  // Require enough scene contrast to make a reliable detection
-  if (contrast < 18) {
-    document.getElementById('camStatusText').textContent = 'Low contrast — improve lighting';
-    return null;
-  }
-
-  // FIX: Removed unused variable `bgEstimate` that was previously declared here.
-  //      Only the adaptive object threshold is needed.
-  //
-  // Adaptive threshold: a column is "object" (foreground) if its luminance is
-  // meaningfully below the scene average. We use a wider margin (25% of contrast)
-  // instead of the previous 15%, giving better detection across varying lighting.
-  const objectThreshold = avgL - contrast * 0.25;
-
-  // 3. Find the LARGEST connected run of "object" columns, preferring center-aligned ones
-  const centerC = W / 2;
-  let bestRun = { start: -1, len: 0, score: 0 };
-  let curStart = -1, curLen = 0;
-
-  for (let c = 0; c <= W; c++) {
-    const isObj = c < W && colLum[c] <= objectThreshold;
-    if (isObj) {
-      if (curStart < 0) curStart = c;
-      curLen++;
-    } else {
-      if (curLen >= 6) {
-        const runCenter = curStart + curLen / 2;
-        // Score: bigger runs win; slight penalty for being off-center
-        const distFromCenter = Math.abs(runCenter - centerC);
-        const score = curLen * (1 - (distFromCenter / W) * 0.5);
-        if (score > bestRun.score) {
-          bestRun = { start: curStart, len: curLen, score };
+ 
+  // Step 2: Gaussian blur (5-tap kernel) — reduces sensor noise
+  const blurred = gaussianBlur(gray, W, H);
+ 
+  // Step 3: Otsu's threshold — adaptive, works across lighting conditions
+  const thresh = otsuThreshold(blurred, W, H);
+ 
+  // Step 4: Scan horizontal band (20%–85% of height) for largest centered foreground blob
+  const bandTop = Math.floor(H * 0.20);
+  const bandBot = Math.floor(H * 0.85);
+  const centerX = W / 2;
+ 
+  let bestRun = { start: -1, width: 0, row: -1, score: -1 };
+ 
+  for (let y = bandTop; y < bandBot; y++) {
+    let runStart = -1, runLen = 0;
+    for (let x = 0; x < W; x++) {
+      const isFg = blurred[y * W + x] < thresh;
+      if (isFg) {
+        if (runStart < 0) runStart = x;
+        runLen++;
+      } else {
+        if (runLen >= 8) {
+          const runCenter = runStart + runLen / 2;
+          const distFromCenter = Math.abs(runCenter - centerX) / W;
+          const score = runLen * (1 - distFromCenter * 0.6);
+          if (score > bestRun.score) {
+            bestRun = { start: runStart, width: runLen, row: y, score };
+          }
         }
+        runStart = -1; runLen = 0;
       }
-      curStart = -1; curLen = 0;
+    }
+    // Check run at end of row
+    if (runLen >= 8) {
+      const runCenter = runStart + runLen / 2;
+      const distFromCenter = Math.abs(runCenter - centerX) / W;
+      const score = runLen * (1 - distFromCenter * 0.6);
+      if (score > bestRun.score) {
+        bestRun = { start: runStart, width: runLen, row: y, score };
+      }
     }
   }
-
-  if (bestRun.len < 6) {
-    document.getElementById('camStatusText').textContent = 'No object detected — point at obstacle';
-    return null;
-  }
-
-  // 4. Scale detected pixel width from the 320-px canvas to the actual video resolution
-  const scaleX = realVideoW / W;
-  const realPixelWidth = bestRun.len * scaleX;
-  C.lastPixelWidth = realPixelWidth;
-  document.getElementById('pxWidthEl').textContent = Math.round(realPixelWidth) + ' px';
-
-  // 5. Triangle similarity: D = (realWidth_m × focalLength_px) / pixelWidth_px
-  const realWidthM = C.knownWidth / 100; // convert cm → m
-  const dist = (realWidthM * C.focalLength) / realPixelWidth;
-
-  // Clamp to a physically sensible range
-  const clamped = Math.max(0.1, Math.min(50, dist));
-  document.getElementById('camStatusText').textContent =
-    `Object: ${Math.round(realPixelWidth)}px wide · ${clamped.toFixed(1)}m`;
-  return clamped;
+ 
+  if (bestRun.width < 8) return null;
+  return bestRun;
 }
-
+ 
+function gaussianBlur(src, W, H) {
+  // Separable 5-tap Gaussian kernel [1, 4, 7, 4, 1] / 17
+  const k = [1, 4, 7, 4, 1];
+  const kSum = 17;
+  const tmp = new Uint8Array(W * H);
+  const out = new Uint8Array(W * H);
+ 
+  // Horizontal pass
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      let s = 0;
+      for (let i = -2; i <= 2; i++) {
+        const xx = Math.max(0, Math.min(W - 1, x + i));
+        s += k[i + 2] * src[y * W + xx];
+      }
+      tmp[y * W + x] = Math.round(s / kSum);
+    }
+  }
+ 
+  // Vertical pass
+  for (let x = 0; x < W; x++) {
+    for (let y = 0; y < H; y++) {
+      let s = 0;
+      for (let i = -2; i <= 2; i++) {
+        const yy = Math.max(0, Math.min(H - 1, y + i));
+        s += k[i + 2] * tmp[yy * W + x];
+      }
+      out[y * W + x] = Math.round(s / kSum);
+    }
+  }
+  return out;
+}
+ 
+function otsuThreshold(gray, W, H) {
+  // Build histogram
+  const hist = new Int32Array(256);
+  const n = W * H;
+  for (let i = 0; i < n; i++) hist[gray[i]]++;
+ 
+  // Compute total mean
+  let total = 0;
+  for (let i = 0; i < 256; i++) total += i * hist[i];
+ 
+  // Maximize between-class variance
+  let sumB = 0, wB = 0, maxVar = 0, threshold = 128;
+  for (let t = 0; t < 256; t++) {
+    wB += hist[t];
+    if (!wB) continue;
+    const wF = n - wB;
+    if (!wF) break;
+    sumB += t * hist[t];
+    const mB = sumB / wB;
+    const mF = (total - sumB) / wF;
+    const variance = wB * wF * (mB - mF) * (mB - mF);
+    if (variance > maxVar) { maxVar = variance; threshold = t; }
+  }
+  return threshold;
+}
+ 
+// ── DRAW OVERLAY ──
+function drawOverlay(result, vid) {
+  const ov = document.getElementById('overlayCanvas');
+  // Sync canvas dimensions to rendered video element size
+  ov.width = ov.clientWidth;
+  ov.height = ov.clientHeight;
+  const ctx = overlayCtx;
+  ctx.clearRect(0, 0, ov.width, ov.height);
+ 
+  // Map from processing coords to overlay coords
+  const sx = ov.width / PROC_W;
+  const sy = ov.height / PROC_H;
+ 
+  const bx = result.start * sx;
+  const bw = result.width * sx;
+  const by = Math.max(0, (result.row - 30) * sy);
+  const bh = Math.min(80 * sy, ov.height - by);
+ 
+  // Detection box
+  ctx.strokeStyle = 'rgba(0, 230, 118, 0.85)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([7, 4]);
+  ctx.strokeRect(bx, by, bw, bh);
+  ctx.setLineDash([]);
+ 
+  // Fill
+  ctx.fillStyle = 'rgba(0, 230, 118, 0.10)';
+  ctx.fillRect(bx, by, bw, bh);
+ 
+  // Center vertical guide
+  const cx = bx + bw / 2;
+  ctx.strokeStyle = 'rgba(41, 182, 246, 0.45)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 6]);
+  ctx.beginPath();
+  ctx.moveTo(cx, 0);
+  ctx.lineTo(cx, ov.height);
+  ctx.stroke();
+  ctx.setLineDash([]);
+ 
+  // Label
+  ctx.fillStyle = 'rgba(0, 230, 118, 0.9)';
+  ctx.font = 'bold 10px monospace';
+  ctx.fillText('DETECTED', bx + 4, Math.max(14, by + 14));
+}
+ 
 // ── MANUAL CAPTURE ──
 function captureFrame() {
   if (!C.camActive) { alert('Enable camera first.'); return; }
   const vid = document.getElementById('videoEl');
   if (!vid.videoWidth) { alert('Camera not ready yet.'); return; }
-  const tmp = document.createElement('canvas');
-  tmp.width = 320; tmp.height = 240;
-  const ctx = tmp.getContext('2d');
-  ctx.drawImage(vid, 0, 0, 320, 240);
-  const dist = estimateDistance(ctx, 320, 240, vid.videoWidth, vid.videoHeight);
-  if (dist !== null) {
-    C.smoothDist = dist;
-    updateDistUI(dist);
-    alert('Captured!\nEstimated distance: ' + dist.toFixed(2) + ' m\nPixel width: ' + Math.round(C.lastPixelWidth) + ' px');
+  procCtx.drawImage(vid, 0, 0, PROC_W, PROC_H);
+  const result = detectObject(procCtx, PROC_W, PROC_H);
+  if (result) {
+    const realPx = result.width * (vid.videoWidth / PROC_W);
+    const d = Math.max(0.1, Math.min(50, (C.knownWidth / 100 * C.focalLength) / realPx));
+    alert('Captured!\nEstimated distance: ' + d.toFixed(2) + ' m\nObject pixel width: ' + Math.round(realPx) + ' px');
   } else {
-    alert('Could not detect an object.\n\nTips:\n• Ensure good lighting\n• Object should have contrast against background\n• Point camera at the rear bumper of a vehicle');
+    alert('No object detected.\n\nTips:\n• Good lighting\n• Object must contrast background\n• Point at rear bumper or wall');
   }
 }
-
+ 
 // ── AUTO-CALIBRATE ──
-// Stand exactly 1 m from the object, then tap. Solves for focal length:
-//   F = pixelWidth × distance / realWidth = pixelWidth × 1 / (knownWidth / 100)
 function autoCalibrate() {
-  if (!C.camActive) {
-    alert('Enable camera first, then stand exactly 1 metre from the object.');
-    return;
-  }
+  if (!C.camActive) { alert('Enable camera first, then stand exactly 1 metre from the obstacle.'); return; }
   const vid = document.getElementById('videoEl');
   if (!vid.videoWidth) { alert('Camera not ready yet.'); return; }
-
-  const tmp = document.createElement('canvas');
-  tmp.width = 320; tmp.height = 240;
-  const ctx = tmp.getContext('2d');
-  ctx.drawImage(vid, 0, 0, 320, 240);
-
-  // Run detection to populate C.lastPixelWidth
-  estimateDistance(ctx, 320, 240, vid.videoWidth, vid.videoHeight);
-
-  if (!C.lastPixelWidth || C.lastPixelWidth < 10) {
-    alert('Could not detect object for calibration.\n\nMake sure:\n• You are exactly 1 metre from the object\n• Object fills a significant portion of frame\n• Good lighting and clear contrast');
+  procCtx.drawImage(vid, 0, 0, PROC_W, PROC_H);
+  const result = detectObject(procCtx, PROC_W, PROC_H);
+ 
+  if (!result || result.width < 8) {
+    alert('Cannot detect object for calibration.\n\nMake sure:\n• You are exactly 1 metre away\n• Object fills a good portion of the frame\n• Good lighting');
     return;
   }
-
-  // FIX: Removed unused variable `scaleX` that was previously declared here.
-  // C.lastPixelWidth is already in original-video-pixel space (scaled inside estimateDistance).
-  const newFocal  = Math.round(C.lastPixelWidth / (C.knownWidth / 100));
-  const clamped   = Math.max(50, Math.min(10000, newFocal));
-
+ 
+  // At 1m: F = pixelWidth_real × distance / realWidth_m
+  // distance = 1.0m, so F = realPx / (knownWidth/100)
+  const realPx = result.width * (vid.videoWidth / PROC_W);
+  const newFocal = Math.round(realPx / (C.knownWidth / 100));
+  const clamped = Math.max(50, Math.min(15000, newFocal));
+ 
   C.focalLength = clamped;
   const slider = document.getElementById('calFocal');
-  slider.max   = Math.max(2000, clamped + 500);
+  slider.max = Math.max(3000, clamped + 500);
   slider.value = clamped;
   document.getElementById('calFocalVal').textContent = clamped + ' px';
-
-  alert(
-    '✓ Calibrated!\n' +
-    'Focal length = ' + clamped + ' px\n' +
-    'Detected pixel width = ' + Math.round(C.lastPixelWidth) + ' px\n\n' +
-    'Now move closer/farther to test accuracy.'
-  );
+ 
+  alert('✓ Calibrated!\nFocal length set to: ' + clamped + ' px\nObject pixel width at 1m: ' + Math.round(realPx) + ' px\n\nNow move closer/farther to verify accuracy.');
 }
-
+ 
 // ── DISTANCE UI ──
 function updateDistUI(dist) {
   const numEl = document.getElementById('distNum');
-  const unitEl = document.getElementById('distUnit');
-  const subEl  = document.getElementById('distSublabel');
-  const barEl  = document.getElementById('distBarFill');
-
+  const subEl = document.getElementById('distSublabel');
+  const barEl = document.getElementById('distBarFill');
+ 
   if (dist === null) {
     numEl.textContent = '--';
-    numEl.className   = 'dist-num safe';
-    unitEl.textContent = 'm';
-    subEl.textContent  = 'No object detected';
-    barEl.style.width  = '0%';
+    numEl.className = 'dist-num safe';
+    document.getElementById('distUnit').textContent = 'm';
+    subEl.textContent = 'No object detected';
+    barEl.style.width = '0%';
     barEl.style.background = 'var(--safe)';
     updateRearViz(null);
     return;
   }
-
-  // FIX: 100 m ≠ 1 km — unit should switch at 1000 m, not 100 m.
+ 
   const display = dist < 10 ? dist.toFixed(1) : Math.round(dist);
-  numEl.textContent  = display;
-  unitEl.textContent = dist >= 1000 ? 'km' : 'm';
-
-  // Colour, label and alert level
-  let cls, label, alertLevel, alertMsg;
+  numEl.textContent = display;
+  document.getElementById('distUnit').textContent = 'm';
+ 
+  let cls, label, alertLevel, alertMsg, alertIcon;
+ 
   if (dist < C.dangerDist) {
-    cls        = 'danger';
-    label      = '⚠ DANGER — Collision risk! Brake immediately!';
-    alertLevel = 'danger';
-    alertMsg   = '🚨 DANGER: Rear collision risk — brake immediately!';
+    cls = 'danger';
+    label = '⚠ DANGER — Brake immediately!';
+    alertLevel = 'danger'; alertIcon = '🚨';
+    alertMsg = 'DANGER: Rear collision risk — brake now!';
     const now = Date.now();
-    if (document.getElementById('vibCheck').checked && now - C.lastVibeTime > 2000) {
-      if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
+    if (document.getElementById('vibCheck').checked && now - C.lastVibeTime > 1800) {
+      if (navigator.vibrate) navigator.vibrate([400, 100, 400, 100, 400]);
       C.lastVibeTime = now;
     }
   } else if (dist < C.warnDist) {
-    cls        = 'warn';
-    label      = '⚠ Caution — reduce speed, increase distance';
-    alertLevel = 'warn';
-    alertMsg   = '⚠ Caution: Obstacle approaching — slow down';
+    cls = 'warn';
+    label = '⚠ Caution — reduce speed, increase distance';
+    alertLevel = 'warn'; alertIcon = '⚠';
+    alertMsg = 'Caution: Obstacle approaching — slow down';
     const now = Date.now();
-    if (document.getElementById('vibCheck').checked && now - C.lastVibeTime > 4000) {
-      if (navigator.vibrate) navigator.vibrate([100, 100, 100]);
+    if (document.getElementById('vibCheck').checked && now - C.lastVibeTime > 3500) {
+      if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
       C.lastVibeTime = now;
     }
   } else {
-    cls        = 'safe';
-    label      = '✓ Safe distance maintained';
-    alertLevel = 'safe';
-    alertMsg   = '✓ Safe — obstacle at a comfortable distance';
+    cls = 'safe';
+    label = '✓ Safe distance maintained';
+    alertLevel = 'safe'; alertIcon = '✓';
+    alertMsg = 'Safe — comfortable distance maintained';
   }
-
+ 
   numEl.className = 'dist-num ' + cls;
   subEl.textContent = label;
-  updateAlert(alertLevel, alertMsg);
-
-  // FIX: Bar direction was inverted — it previously filled toward 100% as distance
-  // increased (safe), making a nearly full bar look "good" and empty look "danger".
-  // Correct behaviour: bar fills as the object gets CLOSER (more danger = more fill).
-  // Maximum visual scale = 20 m (empty bar). At 0 m the bar would be 100% full.
-  const maxScale = 20; // metres
-  const pct = Math.min(100, Math.max(0, (1 - dist / maxScale) * 100));
-  barEl.style.width      = pct + '%';
-  barEl.style.background = dist < C.dangerDist ? 'var(--danger)'
-                         : dist < C.warnDist   ? 'var(--warn)'
-                                                : 'var(--safe)';
-
+  updateAlert(alertLevel, alertIcon, alertMsg);
+ 
+  // Bar: 0% = 0m (danger), 100% = 20m+ (safe)
+  const pct = Math.min(100, (dist / 20) * 100);
+  barEl.style.width = pct + '%';
+  barEl.style.background = dist < C.dangerDist ? 'var(--danger)' : dist < C.warnDist ? 'var(--warn)' : 'var(--safe)';
+ 
   updateRearViz(dist);
 }
-
+ 
 // ── REAR VISUALIZER ──
-// Moves the obstacle car icon up/down to represent proximity.
-// Close → obs icon near bottom (close to your car). Far → obs icon near top.
 function updateRearViz(dist) {
-  const obsEl  = document.getElementById('carObs');
+  const obsEl = document.getElementById('carObs');
   const dashEl = document.getElementById('distDashes');
-
+ 
   if (dist === null) {
-    obsEl.style.top      = '4px';
+    obsEl.style.top = '4px';
     dashEl.style.display = 'none';
     return;
   }
-
-  // Map distance (0 – 20 m) to top-position range (6 px=far … 64 px=close)
-  const maxDist  = 20;
-  const fraction = Math.min(dist / maxDist, 1); // 0=very close, 1=far
-  const topPx    = 6 + (1 - fraction) * 58;
+ 
+  const frac = Math.min(dist / 20, 1); // 0=close, 1=far
+  const topPx = 6 + (1 - frac) * 56;  // 6px (far) → 62px (close)
   obsEl.style.top = Math.round(topPx) + 'px';
-
-  // Dashed line between the two cars
-  const obsBottom = topPx + 28;
-  const yourTop   = 68;
-  const dashTop   = obsBottom + 2;
+ 
+  const obsBottom = topPx + 26;
+  const yourTop = 66;
+  const dashTop = obsBottom + 2;
   const dashHeight = Math.max(0, yourTop - dashTop - 2);
-
+ 
   if (dashHeight > 4) {
     dashEl.style.display = 'block';
-    dashEl.style.top     = Math.round(dashTop) + 'px';
-    dashEl.style.height  = Math.round(dashHeight) + 'px';
+    dashEl.style.top = Math.round(dashTop) + 'px';
+    dashEl.style.height = Math.round(dashHeight) + 'px';
   } else {
     dashEl.style.display = 'none';
   }
 }
-
+ 
 // ── ALERT ──
-function updateAlert(level, msg) {
+function updateAlert(level, icon, msg) {
   const box = document.getElementById('alertBox');
   box.className = 'alert-box ' + level;
-  const icons = { safe:'✓', warn:'⚠', danger:'🚨' };
-  document.getElementById('alertIcon').textContent = icons[level] || '✓';
+  document.getElementById('alertIcon').textContent = icon;
   document.getElementById('alertText').textContent = msg;
 }
-
+ 
 // ── CALIBRATION ──
 function updateCalib() {
-  C.knownWidth  = +document.getElementById('calWidth').value;
+  C.knownWidth = +document.getElementById('calWidth').value;
   C.focalLength = +document.getElementById('calFocal').value;
-  document.getElementById('calWidthVal').textContent = C.knownWidth  + ' cm';
+  document.getElementById('calWidthVal').textContent = C.knownWidth + ' cm';
   document.getElementById('calFocalVal').textContent = C.focalLength + ' px';
 }
-
+ 
 // ── THRESHOLDS ──
 function updateThresholds() {
   C.dangerDist = +document.getElementById('dangerSlider').value;
-  C.warnDist   = +document.getElementById('warnSlider').value;
+  C.warnDist = +document.getElementById('warnSlider').value;
   document.getElementById('dangerVal').textContent = C.dangerDist.toFixed(1) + ' m';
-  document.getElementById('warnVal').textContent   = C.warnDist + ' m';
-  // Update bar labels to reflect current threshold values
-  document.querySelector('.dist-bar-labels').innerHTML =
-    `<span style="color:var(--safe)">◀ SAFE &gt;${C.warnDist}m</span>
+  document.getElementById('warnVal').textContent = C.warnDist.toFixed(1) + ' m';
+  document.getElementById('barLabels').innerHTML =
+    `<span style="color:var(--danger)">◀ DANGER &lt;${C.dangerDist}m</span>
      <span style="color:var(--warn)">CAUTION &lt;${C.warnDist}m</span>
-     <span style="color:var(--danger)">DANGER &lt;${C.dangerDist}m ▶</span>`;
+     <span style="color:var(--safe)">SAFE &gt;${C.warnDist}m ▶</span>`;
 }
 </script>
 </body>
