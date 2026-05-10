@@ -1,751 +1,969 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>RearGuard — Rear Obstacle Distance Monitor</title>
-<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #07090d;
-    --bg2: #0e1218;
-    --bg3: #141a22;
-    --border: rgba(255,255,255,0.07);
-    --safe: #00e676;
-    --warn: #ffab00;
-    --danger: #ff1744;
-    --accent: #29b6f6;
-    --text: #dde3ec;
-    --muted: #5a6780;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  body { background:var(--bg); color:var(--text); font-family:'Exo 2',sans-serif; min-height:100vh; overflow-x:hidden; }
- 
-  /* SPLASH */
-  #splash {
-    position:fixed; inset:0; background:var(--bg);
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    z-index:200; padding:2rem; text-align:center;
-    background-image:radial-gradient(ellipse at 50% 100%, rgba(41,182,246,0.07) 0%, transparent 60%);
-  }
-  .splash-logo { font-family:'Exo 2',sans-serif; font-size:48px; font-weight:800; color:var(--accent); letter-spacing:2px; line-height:1; }
-  .splash-logo span { color:var(--safe); }
-  .splash-sub { font-size:11px; letter-spacing:4px; text-transform:uppercase; color:var(--muted); margin-top:8px; }
-  .splash-desc { font-size:14px; color:var(--muted); margin-top:1.6rem; line-height:1.7; max-width:300px; }
-  .perm-list { margin-top:1.4rem; display:flex; flex-direction:column; gap:10px; width:100%; max-width:300px; }
-  .perm-item { display:flex; align-items:center; gap:12px; background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:12px 16px; }
-  .perm-icon { font-size:20px; flex-shrink:0; }
-  .perm-text strong { display:block; font-size:13px; font-weight:600; color:var(--text); }
-  .perm-text span { font-size:12px; color:var(--muted); }
-  .start-btn { margin-top:1.8rem; background:var(--accent); color:#07090d; border:none; border-radius:50px; padding:16px 0; font-size:16px; font-weight:700; font-family:'Exo 2',sans-serif; cursor:pointer; width:100%; max-width:300px; letter-spacing:2px; text-transform:uppercase; transition:all 0.2s; box-shadow:0 0 24px rgba(41,182,246,0.25); }
-  .start-btn:active { transform:scale(0.97); }
- 
-  /* APP */
-  #app { display:none; }
-  header { display:flex; align-items:center; justify-content:space-between; padding:13px 18px 10px; border-bottom:1px solid var(--border); background:rgba(14,18,24,0.96); backdrop-filter:blur(10px); position:sticky; top:0; z-index:10; }
-  .hlogo { font-family:'Exo 2',sans-serif; font-size:20px; font-weight:800; letter-spacing:1px; }
-  .hlogo span { color:var(--safe); }
-  .hbadge { font-size:11px; letter-spacing:2px; padding:4px 10px; border-radius:6px; background:rgba(41,182,246,0.1); color:var(--accent); border:1px solid rgba(41,182,246,0.2); font-family:'Share Tech Mono',monospace; }
- 
-  main { padding:16px; max-width:480px; margin:0 auto; }
- 
-  /* ALERT */
-  .alert-box { border-radius:14px; padding:13px 16px; margin-bottom:14px; display:flex; align-items:center; gap:10px; font-size:14px; font-weight:600; border:1px solid; transition:all 0.3s; letter-spacing:0.3px; }
-  .alert-box.safe { background:rgba(0,230,118,0.07); border-color:rgba(0,230,118,0.2); color:var(--safe); }
-  .alert-box.warn { background:rgba(255,171,0,0.08); border-color:rgba(255,171,0,0.25); color:var(--warn); }
-  .alert-box.danger { background:rgba(255,23,68,0.1); border-color:rgba(255,23,68,0.3); color:var(--danger); animation:shake 0.4s; }
-  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
- 
-  /* CAMERA */
-  .cam-card { background:var(--bg2); border:1px solid var(--border); border-radius:20px; overflow:hidden; margin-bottom:14px; }
-  .cam-header { display:flex; align-items:center; justify-content:space-between; padding:13px 18px; border-bottom:1px solid var(--border); }
-  .cam-header-label { font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--muted); }
-  .cam-toggle-btn { background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:6px 14px; font-size:12px; font-family:'Exo 2',sans-serif; cursor:pointer; font-weight:600; letter-spacing:1px; transition:all 0.2s; }
-  .cam-toggle-btn.on { border-color:rgba(0,230,118,0.4); color:var(--safe); background:rgba(0,230,118,0.08); }
-  .cam-body { position:relative; }
-  #videoEl { width:100%; height:210px; object-fit:cover; display:block; background:var(--bg3); }
-  #overlayCanvas { position:absolute; top:0; left:0; width:100%; height:210px; pointer-events:none; }
-  .cam-off-msg { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:var(--muted); font-size:13px; }
-  .cam-off-msg span { font-size:36px; }
-  .cam-status-bar { padding:8px 18px; background:var(--bg3); font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--muted); display:flex; align-items:center; gap:8px; }
-  .cam-status-dot { width:6px; height:6px; border-radius:50%; background:var(--muted); flex-shrink:0; }
-  .cam-status-dot.live { background:var(--safe); animation:blink 1.5s infinite; }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
- 
-  /* DISTANCE */
-  .dist-card { background:var(--bg2); border:1px solid var(--border); border-radius:20px; padding:20px 20px 16px; margin-bottom:14px; }
-  .dist-title { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--muted); margin-bottom:12px; }
-  .dist-main { display:flex; align-items:baseline; gap:8px; margin-bottom:8px; }
-  .dist-num { font-family:'Share Tech Mono',monospace; font-size:72px; line-height:1; transition:color 0.4s; }
-  .dist-num.safe { color:var(--safe); }
-  .dist-num.warn { color:var(--warn); }
-  .dist-num.danger { color:var(--danger); }
-  .dist-unit { font-size:22px; color:var(--muted); font-weight:300; }
-  .dist-sublabel { font-size:13px; color:var(--muted); margin-bottom:14px; min-height:20px; }
-  .dist-bar-bg { background:var(--bg3); border-radius:6px; height:10px; overflow:hidden; }
-  .dist-bar-fill { height:100%; border-radius:6px; transition:width 0.4s ease, background 0.4s; min-width:3px; }
-  .dist-bar-labels { display:flex; justify-content:space-between; margin-top:5px; font-size:10px; color:var(--muted); }
- 
-  /* REAR VIZ */
-  .rear-viz { background:var(--bg3); border-radius:14px; padding:14px; position:relative; margin-top:14px; height:130px; overflow:hidden; }
-  .rview-label { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); text-align:center; margin-bottom:4px; }
-  .rview-inner { position:relative; height:100px; }
-  .car-you { position:absolute; bottom:4px; left:50%; transform:translateX(-50%); font-size:32px; z-index:2; }
-  .car-obs { position:absolute; left:50%; transform:translateX(-50%); font-size:28px; z-index:2; transition:top 0.5s ease; top:10px; }
-  .dist-dashes { position:absolute; left:50%; transform:translateX(-1px); width:2px; background:repeating-linear-gradient(to bottom, var(--accent) 0px, var(--accent) 5px, transparent 5px, transparent 10px); transition:all 0.5s ease; opacity:0.45; }
- 
-  /* CALIBRATION */
-  .calib-card { background:var(--bg2); border:1px solid var(--border); border-radius:20px; padding:18px; margin-bottom:14px; }
-  .calib-title { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
-  .calib-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; font-size:14px; color:var(--muted); }
-  .calib-row:last-child { margin-bottom:0; }
-  .calib-row input[type=range] { width:110px; accent-color:var(--accent); }
-  .calib-val { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--accent); min-width:60px; text-align:right; }
-  .calib-info { background:var(--bg3); border-radius:10px; padding:12px; margin-top:12px; }
-  .calib-info p { font-size:12px; color:var(--muted); line-height:1.6; }
-  .calib-info strong { color:var(--accent); }
- 
-  /* CONTROLS */
-  .controls { display:flex; gap:10px; margin-bottom:14px; }
-  .btn { flex:1; padding:14px; border-radius:14px; border:1px solid var(--border); background:var(--bg2); color:var(--text); font-size:14px; font-weight:600; font-family:'Exo 2',sans-serif; cursor:pointer; letter-spacing:1px; transition:all 0.2s; }
-  .btn.primary { background:var(--accent); color:#07090d; border-color:var(--accent); }
-  .btn.stop { background:rgba(255,23,68,0.15); border-color:rgba(255,23,68,0.4); color:var(--danger); }
-  .btn:active { transform:scale(0.97); }
- 
-  /* SETTINGS */
-  .settings-card { background:var(--bg2); border:1px solid var(--border); border-radius:20px; padding:18px; margin-bottom:14px; }
-  .settings-title { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
-  .setting-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; font-size:14px; color:var(--muted); }
-  .setting-row:last-child { margin-bottom:0; }
-  .setting-row input[type=range] { width:110px; accent-color:var(--safe); }
-  .setting-val { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--safe); min-width:50px; text-align:right; }
- 
-  /* INFO */
-  .info-card { background:var(--bg2); border:1px solid var(--border); border-radius:20px; padding:18px; margin-bottom:14px; font-size:13px; color:var(--muted); line-height:1.8; }
-  .info-card strong { color:var(--text); }
-  .info-card code { font-family:'Share Tech Mono',monospace; color:var(--accent); font-size:12px; }
- 
-  footer { text-align:center; padding:14px; font-size:10px; color:rgba(90,103,128,0.4); letter-spacing:2px; }
-</style>
-</head>
-<body>
- 
-<!-- SPLASH -->
-<div id="splash">
-  <div class="splash-logo">REAR<span>GUARD</span></div>
-  <div class="splash-sub">Rear Obstacle Distance Monitor</div>
-  <p class="splash-desc">Use your rear camera to measure the distance from obstacles behind your vehicle in real-time using pinhole camera geometry.</p>
-  <div class="perm-list">
-    <div class="perm-item">
-      <span class="perm-icon">📷</span>
-      <div class="perm-text"><strong>Rear Camera</strong><span>Real-time obstacle detection</span></div>
-    </div>
-    <div class="perm-item">
-      <span class="perm-icon">🔔</span>
-      <div class="perm-text"><strong>Vibration Alert</strong><span>Proximity danger warnings</span></div>
-    </div>
-  </div>
-  <button class="start-btn" onclick="initApp()">ENABLE CAMERA</button>
-</div>
- 
-<!-- APP -->
-<div id="app">
-  <header>
-    <div class="hlogo">REAR<span>GUARD</span></div>
-    <div class="hbadge" id="camBadge">CAM: OFF</div>
-  </header>
- 
-  <main>
- 
-    <!-- Alert -->
-    <div class="alert-box safe" id="alertBox">
-      <span id="alertIcon">📷</span>
-      <span id="alertText">Enable camera to start distance monitoring</span>
-    </div>
- 
-    <!-- Camera -->
-    <div class="cam-card">
-      <div class="cam-header">
-        <span class="cam-header-label">Rear Camera Feed</span>
-        <button class="cam-toggle-btn" id="camToggleBtn" onclick="toggleCamera()">Enable Camera</button>
-      </div>
-      <div class="cam-body">
-        <video id="videoEl" autoplay playsinline muted></video>
-        <canvas id="overlayCanvas"></canvas>
-        <div id="camOffMsg" class="cam-off-msg">
-          <span>📷</span>
-          <div>Camera not active</div>
-          <div style="font-size:11px">Tap "Enable Camera" above</div>
-        </div>
-      </div>
-      <div class="cam-status-bar">
-        <div class="cam-status-dot" id="camStatusDot"></div>
-        <span id="camStatusText">Camera off · Enable to begin</span>
-      </div>
-    </div>
- 
-    <!-- Distance Display -->
-    <div class="dist-card">
-      <div class="dist-title">Rear Obstacle Distance</div>
-      <div class="dist-main">
-        <div class="dist-num safe" id="distNum">--</div>
-        <div class="dist-unit" id="distUnit">m</div>
-      </div>
-      <div class="dist-sublabel" id="distSublabel">No object detected</div>
- 
-      <div class="dist-bar-bg">
-        <div class="dist-bar-fill" id="distBarFill" style="width:0%;background:var(--safe);"></div>
-      </div>
-      <div class="dist-bar-labels" id="barLabels">
-        <span style="color:var(--danger)">◀ DANGER &lt;3m</span>
-        <span style="color:var(--warn)">CAUTION &lt;8m</span>
-        <span style="color:var(--safe)">SAFE &gt;8m ▶</span>
-      </div>
- 
-      <!-- Rear View Visualizer -->
-      <div class="rear-viz">
-        <div class="rview-label">Rear-View Simulation</div>
-        <div class="rview-inner">
-          <div class="car-obs" id="carObs">🚗</div>
-          <div class="dist-dashes" id="distDashes" style="display:none;"></div>
-          <div class="car-you">🚘</div>
-        </div>
-      </div>
-    </div>
- 
-    <!-- Controls -->
-    <div class="controls">
-      <button class="btn primary" id="camMainBtn" onclick="toggleCamera()">▶ Start Camera</button>
-      <button class="btn" onclick="captureFrame()">📸 Capture</button>
-    </div>
- 
-    <!-- Calibration -->
-    <div class="calib-card">
-      <div class="calib-title">Camera Calibration</div>
-      <div class="calib-row">
-        <label>Object Real Width</label>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <input type="range" min="10" max="300" value="180" step="5" id="calWidth" oninput="updateCalib()">
-          <span class="calib-val" id="calWidthVal">180 cm</span>
-        </div>
-      </div>
-      <div class="calib-row">
-        <label>Focal Length (px)</label>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <input type="range" min="50" max="3000" value="700" step="10" id="calFocal" oninput="updateCalib()">
-          <span class="calib-val" id="calFocalVal">700 px</span>
-        </div>
-      </div>
-      <div class="calib-info">
-        <p><strong>📐 Auto-Calibrate:</strong> Stand exactly <strong>1 metre</strong> from obstacle, point camera at it, then tap:</p>
-        <button class="btn primary" onclick="autoCalibrate()" style="margin-top:10px;padding:10px;font-size:13px;">Auto-Calibrate at 1m</button>
-        <p style="margin-top:10px;color:rgba(90,103,128,0.7);font-size:11px;">Formula: <code>D = (W × F) / P</code> · D=distance, W=real width, F=focal length, P=pixel width</p>
-        <p style="margin-top:6px;font-size:11px;color:var(--muted);">Last detected: <span id="pxWidthEl" style="font-family:'Share Tech Mono',monospace;color:var(--accent);">-- px</span></p>
-      </div>
-    </div>
- 
-    <!-- Thresholds -->
-    <div class="settings-card">
-      <div class="settings-title">Alert Thresholds</div>
-      <div class="setting-row">
-        <label>Danger Distance</label>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <input type="range" min="0.5" max="10" value="3" step="0.5" id="dangerSlider" oninput="updateThresholds()">
-          <span class="setting-val" id="dangerVal">3.0 m</span>
-        </div>
-      </div>
-      <div class="setting-row">
-        <label>Warning Distance</label>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <input type="range" min="2" max="20" value="8" step="0.5" id="warnSlider" oninput="updateThresholds()">
-          <span class="setting-val" id="warnVal">8.0 m</span>
-        </div>
-      </div>
-      <div class="setting-row">
-        <label>Vibrate on Danger</label>
-        <input type="checkbox" id="vibCheck" checked style="width:20px;height:20px;accent-color:var(--safe);">
-      </div>
-    </div>
- 
-    <!-- Info -->
-    <div class="info-card">
-      <strong>How Distance is Measured</strong>
-      <p style="margin-top:8px;">Uses <em>pinhole camera triangle similarity</em>. Each frame is converted to grayscale, Gaussian-blurred to remove noise, then Otsu's adaptive threshold separates the obstacle from the background. The largest foreground blob in the central scan band is found, its pixel width measured, and distance computed:</p>
-      <p style="margin-top:8px;"><code>Distance = (Real Width × Focal Length) / Pixel Width</code></p>
-      <p style="margin-top:8px;"><strong>Tips for best accuracy:</strong></p>
-      <ul style="padding-left:16px;margin-top:4px;">
-        <li>Always Auto-Calibrate at exactly 1 metre first</li>
-        <li>Good lighting — avoid dark environments</li>
-        <li>Object must clearly contrast the background</li>
-        <li>Works best pointing at rear bumper of a vehicle</li>
-      </ul>
-    </div>
- 
-  </main>
-  <footer>REARGUARD · OBSTACLE DISTANCE MONITOR</footer>
-</div>
- 
-<script>
-// ── STATE ──
-const C = {
-  camActive: false,
-  stream: null,
-  interval: null,
-  distance: null,
-  knownWidth: 180,    // cm — default car width
-  focalLength: 700,   // px — calibrated per device
-  lastPixelWidth: 0,
-  dangerDist: 3,      // m
-  warnDist: 8,        // m
-  lastVibeTime: 0,
-  smoothDist: null,
-  noDetectCount: 0,
-  videoW: 0,
-  videoH: 0,
-};
- 
-// Fixed processing resolution
-const PROC_W = 320, PROC_H = 240;
-const procCanvas = document.createElement('canvas');
-procCanvas.width = PROC_W;
-procCanvas.height = PROC_H;
-const procCtx = procCanvas.getContext('2d', { willReadFrequently: true });
- 
-let overlayCtx = null;
- 
-function initApp() {
-  document.getElementById('splash').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  const ov = document.getElementById('overlayCanvas');
-  overlayCtx = ov.getContext('2d');
-  updateCalib();
-  updateThresholds();
-  updateDistUI(null);
-}
- 
-// ── CAMERA ──
-async function toggleCamera() {
-  if (!C.camActive) {
-    try {
-      C.stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
-      });
-      const vid = document.getElementById('videoEl');
-      vid.srcObject = C.stream;
-      await new Promise(resolve => { vid.onloadedmetadata = resolve; });
-      vid.play();
-      C.camActive = true;
-      document.getElementById('camOffMsg').style.display = 'none';
-      document.getElementById('camToggleBtn').textContent = 'Disable Camera';
-      document.getElementById('camToggleBtn').classList.add('on');
-      document.getElementById('camMainBtn').textContent = '⏹ Stop Camera';
-      document.getElementById('camMainBtn').className = 'btn stop';
-      document.getElementById('camBadge').textContent = 'CAM: LIVE';
-      document.getElementById('camStatusDot').classList.add('live');
-      document.getElementById('camStatusText').textContent = 'Live · scanning for obstacles…';
-      C.interval = setInterval(scanFrame, 350);
-    } catch (e) {
-      alert('Camera error:\n' + e.message);
-    }
-  } else {
-    stopCamera();
-  }
-}
- 
-function stopCamera() {
-  clearInterval(C.interval);
-  if (C.stream) C.stream.getTracks().forEach(t => t.stop());
-  C.camActive = false; C.stream = null; C.interval = null;
-  C.smoothDist = null; C.noDetectCount = 0;
-  document.getElementById('videoEl').srcObject = null;
-  document.getElementById('camOffMsg').style.display = 'flex';
-  clearOverlay();
-  document.getElementById('camToggleBtn').textContent = 'Enable Camera';
-  document.getElementById('camToggleBtn').classList.remove('on');
-  document.getElementById('camMainBtn').textContent = '▶ Start Camera';
-  document.getElementById('camMainBtn').className = 'btn primary';
-  document.getElementById('camBadge').textContent = 'CAM: OFF';
-  document.getElementById('camStatusDot').classList.remove('live');
-  document.getElementById('camStatusText').textContent = 'Camera off';
-  updateDistUI(null);
-  updateAlert('safe', '📷', 'Camera disabled');
-}
- 
-function clearOverlay() {
-  const ov = document.getElementById('overlayCanvas');
-  if (overlayCtx) overlayCtx.clearRect(0, 0, ov.width, ov.height);
-}
- 
-// ── SCAN FRAME ──
-function scanFrame() {
-  if (!C.camActive) return;
-  const vid = document.getElementById('videoEl');
-  if (!vid.videoWidth || !vid.videoHeight) return;
-  C.videoW = vid.videoWidth;
-  C.videoH = vid.videoHeight;
- 
-  procCtx.drawImage(vid, 0, 0, PROC_W, PROC_H);
-  const result = detectObject(procCtx, PROC_W, PROC_H);
- 
-  if (result) {
-    // Scale pixel width from processing canvas back to real video resolution
-    const scaleX = C.videoW / PROC_W;
-    const realPixelWidth = result.width * scaleX;
-    C.lastPixelWidth = realPixelWidth;
-    document.getElementById('pxWidthEl').textContent = Math.round(realPixelWidth) + ' px';
- 
-    // Triangle similarity: D = (realWidth_m × focalLength) / pixelWidth
-    const realWidthM = C.knownWidth / 100;
-    const rawDist = (realWidthM * C.focalLength) / realPixelWidth;
-    const dist = Math.max(0.1, Math.min(50, rawDist));
- 
-    // Exponential smoothing — α=0.45 for snappy but stable response
-    C.smoothDist = C.smoothDist === null ? dist : 0.55 * C.smoothDist + 0.45 * dist;
-    C.noDetectCount = 0;
- 
-    drawOverlay(result, vid);
-    document.getElementById('camStatusText').textContent =
-      'Object: ' + Math.round(realPixelWidth) + 'px wide · ' + C.smoothDist.toFixed(2) + ' m';
-    updateDistUI(C.smoothDist);
-  } else {
-    clearOverlay();
-    C.noDetectCount++;
-    if (C.noDetectCount >= 4) {
-      C.smoothDist = null;
-      C.noDetectCount = 0;
-      updateDistUI(null);
-      document.getElementById('camStatusText').textContent = 'Scanning — no clear object detected';
-    }
-  }
-}
- 
-// ── OBJECT DETECTION ──
-// Uses: grayscale → Gaussian blur → Otsu threshold → largest foreground blob
-function detectObject(ctx, W, H) {
-  const imgData = ctx.getImageData(0, 0, W, H);
-  const px = imgData.data;
- 
-  // Step 1: Convert to grayscale
-  const gray = new Uint8Array(W * H);
-  for (let i = 0; i < W * H; i++) {
-    const r = px[i * 4], g = px[i * 4 + 1], b = px[i * 4 + 2];
-    gray[i] = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
-  }
- 
-  // Step 2: Gaussian blur (5-tap kernel) — reduces sensor noise
-  const blurred = gaussianBlur(gray, W, H);
- 
-  // Step 3: Otsu's threshold — adaptive, works across lighting conditions
-  const thresh = otsuThreshold(blurred, W, H);
- 
-  // Step 4: Scan horizontal band (20%–85% of height) for largest centered foreground blob
-  const bandTop = Math.floor(H * 0.20);
-  const bandBot = Math.floor(H * 0.85);
-  const centerX = W / 2;
- 
-  let bestRun = { start: -1, width: 0, row: -1, score: -1 };
- 
-  for (let y = bandTop; y < bandBot; y++) {
-    let runStart = -1, runLen = 0;
-    for (let x = 0; x < W; x++) {
-      const isFg = blurred[y * W + x] < thresh;
-      if (isFg) {
-        if (runStart < 0) runStart = x;
-        runLen++;
-      } else {
-        if (runLen >= 8) {
-          const runCenter = runStart + runLen / 2;
-          const distFromCenter = Math.abs(runCenter - centerX) / W;
-          const score = runLen * (1 - distFromCenter * 0.6);
-          if (score > bestRun.score) {
-            bestRun = { start: runStart, width: runLen, row: y, score };
-          }
-        }
-        runStart = -1; runLen = 0;
-      }
-    }
-    // Check run at end of row
-    if (runLen >= 8) {
-      const runCenter = runStart + runLen / 2;
-      const distFromCenter = Math.abs(runCenter - centerX) / W;
-      const score = runLen * (1 - distFromCenter * 0.6);
-      if (score > bestRun.score) {
-        bestRun = { start: runStart, width: runLen, row: y, score };
-      }
-    }
-  }
- 
-  if (bestRun.width < 8) return null;
-  return bestRun;
-}
- 
-function gaussianBlur(src, W, H) {
-  // Separable 5-tap Gaussian kernel [1, 4, 7, 4, 1] / 17
-  const k = [1, 4, 7, 4, 1];
-  const kSum = 17;
-  const tmp = new Uint8Array(W * H);
-  const out = new Uint8Array(W * H);
- 
-  // Horizontal pass
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      let s = 0;
-      for (let i = -2; i <= 2; i++) {
-        const xx = Math.max(0, Math.min(W - 1, x + i));
-        s += k[i + 2] * src[y * W + xx];
-      }
-      tmp[y * W + x] = Math.round(s / kSum);
-    }
-  }
- 
-  // Vertical pass
-  for (let x = 0; x < W; x++) {
-    for (let y = 0; y < H; y++) {
-      let s = 0;
-      for (let i = -2; i <= 2; i++) {
-        const yy = Math.max(0, Math.min(H - 1, y + i));
-        s += k[i + 2] * tmp[yy * W + x];
-      }
-      out[y * W + x] = Math.round(s / kSum);
-    }
-  }
-  return out;
-}
- 
-function otsuThreshold(gray, W, H) {
-  // Build histogram
-  const hist = new Int32Array(256);
-  const n = W * H;
-  for (let i = 0; i < n; i++) hist[gray[i]]++;
- 
-  // Compute total mean
-  let total = 0;
-  for (let i = 0; i < 256; i++) total += i * hist[i];
- 
-  // Maximize between-class variance
-  let sumB = 0, wB = 0, maxVar = 0, threshold = 128;
-  for (let t = 0; t < 256; t++) {
-    wB += hist[t];
-    if (!wB) continue;
-    const wF = n - wB;
-    if (!wF) break;
-    sumB += t * hist[t];
-    const mB = sumB / wB;
-    const mF = (total - sumB) / wF;
-    const variance = wB * wF * (mB - mF) * (mB - mF);
-    if (variance > maxVar) { maxVar = variance; threshold = t; }
-  }
-  return threshold;
-}
- 
-// ── DRAW OVERLAY ──
-function drawOverlay(result, vid) {
-  const ov = document.getElementById('overlayCanvas');
-  // Sync canvas dimensions to rendered video element size
-  ov.width = ov.clientWidth;
-  ov.height = ov.clientHeight;
-  const ctx = overlayCtx;
-  ctx.clearRect(0, 0, ov.width, ov.height);
- 
-  // Map from processing coords to overlay coords
-  const sx = ov.width / PROC_W;
-  const sy = ov.height / PROC_H;
- 
-  const bx = result.start * sx;
-  const bw = result.width * sx;
-  const by = Math.max(0, (result.row - 30) * sy);
-  const bh = Math.min(80 * sy, ov.height - by);
- 
-  // Detection box
-  ctx.strokeStyle = 'rgba(0, 230, 118, 0.85)';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([7, 4]);
-  ctx.strokeRect(bx, by, bw, bh);
-  ctx.setLineDash([]);
- 
-  // Fill
-  ctx.fillStyle = 'rgba(0, 230, 118, 0.10)';
-  ctx.fillRect(bx, by, bw, bh);
- 
-  // Center vertical guide
-  const cx = bx + bw / 2;
-  ctx.strokeStyle = 'rgba(41, 182, 246, 0.45)';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([3, 6]);
-  ctx.beginPath();
-  ctx.moveTo(cx, 0);
-  ctx.lineTo(cx, ov.height);
-  ctx.stroke();
-  ctx.setLineDash([]);
- 
-  // Label
-  ctx.fillStyle = 'rgba(0, 230, 118, 0.9)';
-  ctx.font = 'bold 10px monospace';
-  ctx.fillText('DETECTED', bx + 4, Math.max(14, by + 14));
-}
- 
-// ── MANUAL CAPTURE ──
-function captureFrame() {
-  if (!C.camActive) { alert('Enable camera first.'); return; }
-  const vid = document.getElementById('videoEl');
-  if (!vid.videoWidth) { alert('Camera not ready yet.'); return; }
-  procCtx.drawImage(vid, 0, 0, PROC_W, PROC_H);
-  const result = detectObject(procCtx, PROC_W, PROC_H);
-  if (result) {
-    const realPx = result.width * (vid.videoWidth / PROC_W);
-    const d = Math.max(0.1, Math.min(50, (C.knownWidth / 100 * C.focalLength) / realPx));
-    alert('Captured!\nEstimated distance: ' + d.toFixed(2) + ' m\nObject pixel width: ' + Math.round(realPx) + ' px');
-  } else {
-    alert('No object detected.\n\nTips:\n• Good lighting\n• Object must contrast background\n• Point at rear bumper or wall');
-  }
-}
- 
-// ── AUTO-CALIBRATE ──
-function autoCalibrate() {
-  if (!C.camActive) { alert('Enable camera first, then stand exactly 1 metre from the obstacle.'); return; }
-  const vid = document.getElementById('videoEl');
-  if (!vid.videoWidth) { alert('Camera not ready yet.'); return; }
-  procCtx.drawImage(vid, 0, 0, PROC_W, PROC_H);
-  const result = detectObject(procCtx, PROC_W, PROC_H);
- 
-  if (!result || result.width < 8) {
-    alert('Cannot detect object for calibration.\n\nMake sure:\n• You are exactly 1 metre away\n• Object fills a good portion of the frame\n• Good lighting');
-    return;
-  }
- 
-  // At 1m: F = pixelWidth_real × distance / realWidth_m
-  // distance = 1.0m, so F = realPx / (knownWidth/100)
-  const realPx = result.width * (vid.videoWidth / PROC_W);
-  const newFocal = Math.round(realPx / (C.knownWidth / 100));
-  const clamped = Math.max(50, Math.min(15000, newFocal));
- 
-  C.focalLength = clamped;
-  const slider = document.getElementById('calFocal');
-  slider.max = Math.max(3000, clamped + 500);
-  slider.value = clamped;
-  document.getElementById('calFocalVal').textContent = clamped + ' px';
- 
-  alert('✓ Calibrated!\nFocal length set to: ' + clamped + ' px\nObject pixel width at 1m: ' + Math.round(realPx) + ' px\n\nNow move closer/farther to verify accuracy.');
-}
- 
-// ── DISTANCE UI ──
-function updateDistUI(dist) {
-  const numEl = document.getElementById('distNum');
-  const subEl = document.getElementById('distSublabel');
-  const barEl = document.getElementById('distBarFill');
- 
-  if (dist === null) {
-    numEl.textContent = '--';
-    numEl.className = 'dist-num safe';
-    document.getElementById('distUnit').textContent = 'm';
-    subEl.textContent = 'No object detected';
-    barEl.style.width = '0%';
-    barEl.style.background = 'var(--safe)';
-    updateRearViz(null);
-    return;
-  }
- 
-  const display = dist < 10 ? dist.toFixed(1) : Math.round(dist);
-  numEl.textContent = display;
-  document.getElementById('distUnit').textContent = 'm';
- 
-  let cls, label, alertLevel, alertMsg, alertIcon;
- 
-  if (dist < C.dangerDist) {
-    cls = 'danger';
-    label = '⚠ DANGER — Brake immediately!';
-    alertLevel = 'danger'; alertIcon = '🚨';
-    alertMsg = 'DANGER: Rear collision risk — brake now!';
-    const now = Date.now();
-    if (document.getElementById('vibCheck').checked && now - C.lastVibeTime > 1800) {
-      if (navigator.vibrate) navigator.vibrate([400, 100, 400, 100, 400]);
-      C.lastVibeTime = now;
-    }
-  } else if (dist < C.warnDist) {
-    cls = 'warn';
-    label = '⚠ Caution — reduce speed, increase distance';
-    alertLevel = 'warn'; alertIcon = '⚠';
-    alertMsg = 'Caution: Obstacle approaching — slow down';
-    const now = Date.now();
-    if (document.getElementById('vibCheck').checked && now - C.lastVibeTime > 3500) {
-      if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
-      C.lastVibeTime = now;
-    }
-  } else {
-    cls = 'safe';
-    label = '✓ Safe distance maintained';
-    alertLevel = 'safe'; alertIcon = '✓';
-    alertMsg = 'Safe — comfortable distance maintained';
-  }
- 
-  numEl.className = 'dist-num ' + cls;
-  subEl.textContent = label;
-  updateAlert(alertLevel, alertIcon, alertMsg);
- 
-  // Bar: 0% = 0m (danger), 100% = 20m+ (safe)
-  const pct = Math.min(100, (dist / 20) * 100);
-  barEl.style.width = pct + '%';
-  barEl.style.background = dist < C.dangerDist ? 'var(--danger)' : dist < C.warnDist ? 'var(--warn)' : 'var(--safe)';
- 
-  updateRearViz(dist);
-}
- 
-// ── REAR VISUALIZER ──
-function updateRearViz(dist) {
-  const obsEl = document.getElementById('carObs');
-  const dashEl = document.getElementById('distDashes');
- 
-  if (dist === null) {
-    obsEl.style.top = '4px';
-    dashEl.style.display = 'none';
-    return;
-  }
- 
-  const frac = Math.min(dist / 20, 1); // 0=close, 1=far
-  const topPx = 6 + (1 - frac) * 56;  // 6px (far) → 62px (close)
-  obsEl.style.top = Math.round(topPx) + 'px';
- 
-  const obsBottom = topPx + 26;
-  const yourTop = 66;
-  const dashTop = obsBottom + 2;
-  const dashHeight = Math.max(0, yourTop - dashTop - 2);
- 
-  if (dashHeight > 4) {
-    dashEl.style.display = 'block';
-    dashEl.style.top = Math.round(dashTop) + 'px';
-    dashEl.style.height = Math.round(dashHeight) + 'px';
-  } else {
-    dashEl.style.display = 'none';
-  }
-}
- 
-// ── ALERT ──
-function updateAlert(level, icon, msg) {
-  const box = document.getElementById('alertBox');
-  box.className = 'alert-box ' + level;
-  document.getElementById('alertIcon').textContent = icon;
-  document.getElementById('alertText').textContent = msg;
-}
- 
-// ── CALIBRATION ──
-function updateCalib() {
-  C.knownWidth = +document.getElementById('calWidth').value;
-  C.focalLength = +document.getElementById('calFocal').value;
-  document.getElementById('calWidthVal').textContent = C.knownWidth + ' cm';
-  document.getElementById('calFocalVal').textContent = C.focalLength + ' px';
-}
- 
-// ── THRESHOLDS ──
-function updateThresholds() {
-  C.dangerDist = +document.getElementById('dangerSlider').value;
-  C.warnDist = +document.getElementById('warnSlider').value;
-  document.getElementById('dangerVal').textContent = C.dangerDist.toFixed(1) + ' m';
-  document.getElementById('warnVal').textContent = C.warnDist.toFixed(1) + ' m';
-  document.getElementById('barLabels').innerHTML =
-    `<span style="color:var(--danger)">◀ DANGER &lt;${C.dangerDist}m</span>
-     <span style="color:var(--warn)">CAUTION &lt;${C.warnDist}m</span>
-     <span style="color:var(--safe)">SAFE &gt;${C.warnDist}m ▶</span>`;
-}
-</script>
-</body>
-</html>
+"""
+=============================================================================
+  REAL-TIME CAR SAFETY SYSTEM
+  Project: Speed of a Car/Object + Rear Obstacle Distance Detection
+  GUI: Tkinter (Mobile/Desktop compatible)
+  Language: Python 3.x
+
+  Features:
+    - Real-time vehicle speed estimation using optical flow (webcam)
+    - Rear obstacle distance estimation using ultrasonic sensor (HC-SR04)
+      OR simulated via camera-based depth estimation
+    - Live dashboard with animated gauges, alerts, and data logging
+    - Collision warning system with audio alerts
+    - Data export to CSV
+
+  Hardware (Optional for real deployment):
+    - Raspberry Pi / PC with webcam
+    - HC-SR04 Ultrasonic Sensor (GPIO pins 23 & 24)
+    - Buzzer on GPIO pin 17
+
+  Dependencies:
+    pip install opencv-python numpy pillow pygame RPi.GPIO (for Pi only)
+
+  Authors  : [Your Group Names Here]
+  Course   : [Your Course Name]
+  Date     : 2025
+=============================================================================
+"""
+
+import tkinter as tk
+from tkinter import ttk, messagebox, filedialog
+import cv2
+import numpy as np
+import threading
+import time
+import math
+import csv
+import os
+import random
+from datetime import datetime
+from PIL import Image, ImageTk
+import queue
+
+# ─── Try importing GPIO (Raspberry Pi) & pygame ──────────────────────────────
+try:
+    import RPi.GPIO as GPIO
+    GPIO_AVAILABLE = True
+except ImportError:
+    GPIO_AVAILABLE = False
+
+try:
+    import pygame
+    pygame.mixer.init()
+    AUDIO_AVAILABLE = True
+except ImportError:
+    AUDIO_AVAILABLE = False
+
+# ─── Constants ────────────────────────────────────────────────────────────────
+TRIG_PIN       = 23          # GPIO pin for HC-SR04 trigger
+ECHO_PIN       = 24          # GPIO pin for HC-SR04 echo
+BUZZER_PIN     = 17          # GPIO buzzer pin
+SPEED_OF_SOUND = 34300       # cm/s
+FOCAL_LENGTH   = 615         # Camera focal length (pixels) — calibrate for your cam
+KNOWN_WIDTH    = 200         # Known width of reference object in pixels at 1m
+
+DANGER_DIST    = 50          # cm — DANGER zone
+WARNING_DIST   = 150         # cm — WARNING zone
+MAX_SPEED      = 200         # km/h — gauge max
+SPEED_LIMIT    = 120         # km/h — speed warning threshold
+
+PIXELS_PER_METER = 100       # Calibration: pixels per real-world meter
+FRAME_SCALE    = 0.5         # Scale factor to resize frame for processing
+UPDATE_INTERVAL = 50         # ms — GUI refresh rate
+
+# ─── GPIO Setup ───────────────────────────────────────────────────────────────
+def setup_gpio():
+    if not GPIO_AVAILABLE:
+        return
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(TRIG_PIN, GPIO.OUT)
+    GPIO.setup(ECHO_PIN, GPIO.IN)
+    GPIO.setup(BUZZER_PIN, GPIO.OUT)
+    GPIO.output(TRIG_PIN, False)
+    GPIO.output(BUZZER_PIN, False)
+    time.sleep(0.5)
+
+def cleanup_gpio():
+    if GPIO_AVAILABLE:
+        GPIO.cleanup()
+
+# ─── Ultrasonic Distance Measurement ──────────────────────────────────────────
+def measure_distance_ultrasonic():
+    """Measure distance using HC-SR04 ultrasonic sensor."""
+    if not GPIO_AVAILABLE:
+        return None
+
+    GPIO.output(TRIG_PIN, True)
+    time.sleep(0.00001)
+    GPIO.output(TRIG_PIN, False)
+
+    pulse_start = time.time()
+    pulse_end   = time.time()
+    timeout     = time.time() + 0.04  # 40ms timeout
+
+    while GPIO.input(ECHO_PIN) == 0:
+        pulse_start = time.time()
+        if pulse_start > timeout:
+            return None
+
+    timeout = time.time() + 0.04
+    while GPIO.input(ECHO_PIN) == 1:
+        pulse_end = time.time()
+        if pulse_end > timeout:
+            return None
+
+    duration = pulse_end - pulse_start
+    distance = (duration * SPEED_OF_SOUND) / 2
+    return round(distance, 1)
+
+# ─── Optical Flow Speed Estimator ─────────────────────────────────────────────
+class SpeedEstimator:
+    """
+    Estimates object/vehicle speed using Lucas-Kanade Optical Flow.
+    Works with a standard webcam. Tracks feature points between consecutive
+    frames and converts pixel displacement to real-world speed (km/h).
+    """
+
+    def __init__(self, fps=30, ppm=PIXELS_PER_METER):
+        self.fps            = fps
+        self.ppm            = ppm           # pixels per meter
+        self.prev_gray      = None
+        self.prev_pts       = None
+        self.speed_kmh      = 0.0
+        self.speed_history  = []
+        self.frame_count    = 0
+
+        # Lucas-Kanade optical flow parameters
+        self.lk_params = dict(
+            winSize   = (21, 21),
+            maxLevel  = 3,
+            criteria  = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01)
+        )
+        # Shi-Tomasi corner detection parameters
+        self.feature_params = dict(
+            maxCorners   = 100,
+            qualityLevel = 0.3,
+            minDistance  = 7,
+            blockSize    = 7
+        )
+
+    def estimate(self, frame):
+        """Process a frame and return estimated speed in km/h."""
+        small  = cv2.resize(frame, (0, 0), fx=FRAME_SCALE, fy=FRAME_SCALE)
+        gray   = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY)
+        self.frame_count += 1
+
+        if self.prev_gray is None:
+            self.prev_gray = gray
+            self.prev_pts  = cv2.goodFeaturesToTrack(gray, mask=None, **self.feature_params)
+            return 0.0, frame
+
+        if self.prev_pts is None or len(self.prev_pts) < 5:
+            self.prev_pts = cv2.goodFeaturesToTrack(gray, mask=None, **self.feature_params)
+            self.prev_gray = gray
+            return self.speed_kmh, frame
+
+        # Calculate optical flow
+        next_pts, status, _ = cv2.calcOpticalFlowPyrLK(
+            self.prev_gray, gray, self.prev_pts, None, **self.lk_params
+        )
+
+        if next_pts is None:
+            self.prev_gray = gray
+            return self.speed_kmh, frame
+
+        good_new  = next_pts[status == 1]
+        good_prev = self.prev_pts[status == 1]
+
+        if len(good_new) < 3:
+            self.prev_pts  = cv2.goodFeaturesToTrack(gray, mask=None, **self.feature_params)
+            self.prev_gray = gray
+            return self.speed_kmh, frame
+
+        # Compute displacements
+        displacements = np.linalg.norm(good_new - good_prev, axis=1)
+        median_disp   = np.median(displacements)             # pixels per frame
+
+        # Convert: pixels/frame → m/s → km/h
+        meters_per_frame = median_disp / (self.ppm * FRAME_SCALE)
+        meters_per_sec   = meters_per_frame * self.fps
+        kmh              = meters_per_sec * 3.6
+
+        # Smooth speed over last 10 readings
+        self.speed_history.append(kmh)
+        if len(self.speed_history) > 10:
+            self.speed_history.pop(0)
+        self.speed_kmh = round(np.mean(self.speed_history), 1)
+
+        # Draw flow vectors on frame
+        mask = np.zeros_like(frame)
+        for new, prev in zip(good_new / FRAME_SCALE, good_prev / FRAME_SCALE):
+            a, b = new.ravel().astype(int)
+            c, d = prev.ravel().astype(int)
+            cv2.arrowedLine(frame, (c, d), (a, b), (0, 255, 100), 2, tipLength=0.4)
+            cv2.circle(frame, (a, b), 3, (0, 200, 255), -1)
+
+        # Refresh feature points every 15 frames
+        if self.frame_count % 15 == 0:
+            self.prev_pts = cv2.goodFeaturesToTrack(gray, mask=None, **self.feature_params)
+        else:
+            self.prev_pts = good_new.reshape(-1, 1, 2)
+
+        self.prev_gray = gray
+        return self.speed_kmh, frame
+
+# ─── Camera-Based Distance Estimator ──────────────────────────────────────────
+class DistanceEstimator:
+    """
+    Estimates distance to rear obstacle using contour detection.
+    Falls back to ultrasonic sensor if GPIO is available.
+    Principle: uses apparent width of detected objects vs known real width.
+      Distance = (Known_Width * Focal_Length) / Perceived_Width_in_pixels
+    """
+
+    def __init__(self, focal_length=FOCAL_LENGTH, known_width_cm=30):
+        self.focal_length   = focal_length
+        self.known_width_cm = known_width_cm   # real width of reference object
+        self.distance_cm    = 999.0
+        self.dist_history   = []
+
+    def estimate(self, frame):
+        """Return estimated distance in cm and annotated frame."""
+        # Prefer hardware ultrasonic sensor
+        hw_dist = measure_distance_ultrasonic()
+        if hw_dist is not None:
+            self.distance_cm = hw_dist
+            return hw_dist, frame
+
+        # Software fallback: detect largest contour in ROI
+        h, w = frame.shape[:2]
+        roi   = frame[h//2:, :]           # bottom half = rear camera view
+
+        gray  = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        blur  = cv2.GaussianBlur(gray, (7, 7), 0)
+        edges = cv2.Canny(blur, 50, 150)
+
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        if contours:
+            largest = max(contours, key=cv2.contourArea)
+            if cv2.contourArea(largest) > 500:
+                x, y, cw, ch = cv2.boundingRect(largest)
+                if cw > 20:
+                    dist = (self.known_width_cm * self.focal_length) / cw
+                    dist = round(dist, 1)
+
+                    # Smooth
+                    self.dist_history.append(dist)
+                    if len(self.dist_history) > 8:
+                        self.dist_history.pop(0)
+                    self.distance_cm = round(np.mean(self.dist_history), 1)
+
+                    # Draw bounding box on frame
+                    ry = y + h // 2
+                    cv2.rectangle(frame, (x, ry), (x + cw, ry + ch), (0, 120, 255), 2)
+                    cv2.putText(frame, f"{self.distance_cm} cm",
+                                (x, ry - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                                0.7, (0, 120, 255), 2)
+
+        return self.distance_cm, frame
+
+# ─── Data Logger ──────────────────────────────────────────────────────────────
+class DataLogger:
+    def __init__(self):
+        self.records = []
+        self.start_time = time.time()
+
+    def log(self, speed, distance, alert):
+        self.records.append({
+            "timestamp": datetime.now().strftime("%H:%M:%S.%f")[:-3],
+            "elapsed_s": round(time.time() - self.start_time, 2),
+            "speed_kmh": speed,
+            "distance_cm": distance,
+            "alert": alert
+        })
+
+    def export_csv(self, path):
+        if not self.records:
+            return False
+        with open(path, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=self.records[0].keys())
+            writer.writeheader()
+            writer.writerows(self.records)
+        return True
+
+# ─── Main Application GUI ──────────────────────────────────────────────────────
+class CarSafetyApp(tk.Tk):
+    """
+    Main GUI Application — Real-Time Car Safety Dashboard
+    Displays: Speed Gauge | Distance Gauge | Live Camera Feed | Alerts | Data Log
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.title("Real-Time Car Safety System")
+        self.configure(bg="#0A0E1A")
+        self.resizable(True, True)
+
+        # ── State variables ──
+        self.running         = False
+        self.camera_active   = False
+        self.speed_kmh       = tk.DoubleVar(value=0.0)
+        self.distance_cm     = tk.DoubleVar(value=999.0)
+        self.alert_msg       = tk.StringVar(value="System Ready")
+        self.alert_color     = "#00FF88"
+        self.sim_mode        = tk.BooleanVar(value=True)   # simulation if no camera
+        self.cap             = None
+        self.frame_queue     = queue.Queue(maxsize=2)
+        self.speed_est       = SpeedEstimator()
+        self.dist_est        = DistanceEstimator()
+        self.logger          = DataLogger()
+        self.speed_data      = [0.0] * 60    # 60-point history for graph
+        self.dist_data       = [999.0] * 60
+        self.last_buzz_time  = 0
+
+        # ── Simulation variables ──
+        self._sim_speed      = 0.0
+        self._sim_dist       = 300.0
+        self._sim_direction  = 1
+
+        setup_gpio()
+        self._build_ui()
+        self._start_update_loop()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    #  UI CONSTRUCTION
+    # ══════════════════════════════════════════════════════════════════════════
+    def _build_ui(self):
+        self.geometry("1100x720")
+        self.minsize(900, 600)
+
+        # ── Fonts ──
+        title_font  = ("Courier New", 11, "bold")
+        gauge_font  = ("Courier New", 28, "bold")
+        label_font  = ("Courier New", 9)
+        small_font  = ("Courier New", 8)
+        alert_font  = ("Courier New", 13, "bold")
+
+        # ── Top header bar ──
+        header = tk.Frame(self, bg="#060912", height=50)
+        header.pack(fill="x")
+        header.pack_propagate(False)
+
+        tk.Label(header, text="🚗  REAL-TIME CAR SAFETY SYSTEM",
+                 font=("Courier New", 14, "bold"),
+                 bg="#060912", fg="#00FF88").pack(side="left", padx=20, pady=12)
+
+        self.clock_lbl = tk.Label(header, text="", font=label_font,
+                                   bg="#060912", fg="#446688")
+        self.clock_lbl.pack(side="right", padx=20)
+
+        self.status_lbl = tk.Label(header, text="● OFFLINE",
+                                    font=("Courier New", 10, "bold"),
+                                    bg="#060912", fg="#FF4444")
+        self.status_lbl.pack(side="right", padx=10)
+
+        # ── Main content area ──
+        content = tk.Frame(self, bg="#0A0E1A")
+        content.pack(fill="both", expand=True, padx=10, pady=5)
+
+        # ── Left column: controls + log ──
+        left = tk.Frame(content, bg="#0A0E1A", width=220)
+        left.pack(side="left", fill="y", padx=(0, 8))
+        left.pack_propagate(False)
+
+        # Control panel
+        ctrl_frame = tk.LabelFrame(left, text=" CONTROLS ",
+                                    bg="#0A0E1A", fg="#00FF88",
+                                    font=label_font,
+                                    relief="solid", bd=1,
+                                    highlightcolor="#00FF88")
+        ctrl_frame.pack(fill="x", pady=(0, 8))
+
+        self.start_btn = tk.Button(ctrl_frame, text="▶  START SYSTEM",
+                                    bg="#003322", fg="#00FF88",
+                                    font=("Courier New", 9, "bold"),
+                                    activebackground="#005533",
+                                    activeforeground="#00FF88",
+                                    relief="flat", bd=0, pady=8,
+                                    cursor="hand2",
+                                    command=self.toggle_system)
+        self.start_btn.pack(fill="x", padx=8, pady=6)
+
+        tk.Checkbutton(ctrl_frame, text="Simulation Mode",
+                       variable=self.sim_mode,
+                       bg="#0A0E1A", fg="#8899AA",
+                       selectcolor="#0A0E1A",
+                       activebackground="#0A0E1A",
+                       font=small_font).pack(anchor="w", padx=8, pady=2)
+
+        tk.Button(ctrl_frame, text="📁  Export CSV",
+                   bg="#0A1A2A", fg="#4488CC",
+                   font=small_font, relief="flat",
+                   cursor="hand2",
+                   command=self.export_data).pack(fill="x", padx=8, pady=4)
+
+        tk.Button(ctrl_frame, text="🔄  Reset Logger",
+                   bg="#0A1A2A", fg="#886644",
+                   font=small_font, relief="flat",
+                   cursor="hand2",
+                   command=self._reset_logger).pack(fill="x", padx=8, pady=2)
+
+        # Calibration
+        calib_frame = tk.LabelFrame(left, text=" CALIBRATION ",
+                                     bg="#0A0E1A", fg="#4488CC",
+                                     font=label_font, relief="solid", bd=1)
+        calib_frame.pack(fill="x", pady=(0, 8))
+
+        tk.Label(calib_frame, text="Pixels/Meter:", bg="#0A0E1A",
+                 fg="#8899AA", font=small_font).pack(anchor="w", padx=8, pady=(4,0))
+        self.ppm_var = tk.StringVar(value=str(PIXELS_PER_METER))
+        tk.Entry(calib_frame, textvariable=self.ppm_var,
+                 bg="#111827", fg="#00FF88", font=small_font,
+                 insertbackground="#00FF88", relief="flat", bd=4).pack(fill="x", padx=8, pady=2)
+
+        tk.Label(calib_frame, text="Known Width (cm):", bg="#0A0E1A",
+                 fg="#8899AA", font=small_font).pack(anchor="w", padx=8, pady=(4,0))
+        self.kw_var = tk.StringVar(value="30")
+        tk.Entry(calib_frame, textvariable=self.kw_var,
+                 bg="#111827", fg="#00FF88", font=small_font,
+                 insertbackground="#00FF88", relief="flat", bd=4).pack(fill="x", padx=8, pady=2)
+
+        tk.Button(calib_frame, text="Apply Calibration",
+                   bg="#0A1A2A", fg="#4488CC",
+                   font=small_font, relief="flat",
+                   cursor="hand2",
+                   command=self._apply_calibration).pack(fill="x", padx=8, pady=6)
+
+        # Log panel
+        log_frame = tk.LabelFrame(left, text=" EVENT LOG ",
+                                   bg="#0A0E1A", fg="#4488CC",
+                                   font=label_font, relief="solid", bd=1)
+        log_frame.pack(fill="both", expand=True)
+
+        self.log_text = tk.Text(log_frame, bg="#060912", fg="#446688",
+                                 font=("Courier New", 7),
+                                 relief="flat", bd=0, wrap="word",
+                                 state="disabled")
+        self.log_text.pack(fill="both", expand=True, padx=4, pady=4)
+        sb = tk.Scrollbar(log_frame, command=self.log_text.yview,
+                          bg="#111827", troughcolor="#060912")
+        sb.pack(side="right", fill="y")
+        self.log_text.config(yscrollcommand=sb.set)
+
+        # ── Center column: gauges + alert ──
+        center = tk.Frame(content, bg="#0A0E1A")
+        center.pack(side="left", fill="both", expand=True, padx=4)
+
+        # Alert bar
+        self.alert_frame = tk.Frame(center, bg="#002211", height=50)
+        self.alert_frame.pack(fill="x", pady=(0, 8))
+        self.alert_frame.pack_propagate(False)
+
+        self.alert_lbl = tk.Label(self.alert_frame,
+                                   textvariable=self.alert_msg,
+                                   font=alert_font,
+                                   bg="#002211", fg="#00FF88")
+        self.alert_lbl.pack(fill="both", expand=True)
+
+        # Gauges row
+        gauges_frame = tk.Frame(center, bg="#0A0E1A")
+        gauges_frame.pack(fill="x")
+
+        # Speed gauge canvas
+        spd_box = tk.LabelFrame(gauges_frame, text=" VEHICLE SPEED ",
+                                  bg="#0A0E1A", fg="#00FF88",
+                                  font=label_font, relief="solid", bd=1)
+        spd_box.pack(side="left", fill="both", expand=True, padx=(0, 4))
+
+        self.speed_canvas = tk.Canvas(spd_box, bg="#060912",
+                                       highlightthickness=0, height=220)
+        self.speed_canvas.pack(fill="both", expand=True, padx=4, pady=4)
+
+        self.speed_val_lbl = tk.Label(spd_box,
+                                       text="0.0 km/h",
+                                       font=gauge_font,
+                                       bg="#0A0E1A", fg="#00FF88")
+        self.speed_val_lbl.pack(pady=(0, 4))
+
+        # Distance gauge canvas
+        dist_box = tk.LabelFrame(gauges_frame, text=" REAR OBSTACLE DISTANCE ",
+                                  bg="#0A0E1A", fg="#FF6600",
+                                  font=label_font, relief="solid", bd=1)
+        dist_box.pack(side="left", fill="both", expand=True, padx=(4, 0))
+
+        self.dist_canvas = tk.Canvas(dist_box, bg="#060912",
+                                      highlightthickness=0, height=220)
+        self.dist_canvas.pack(fill="both", expand=True, padx=4, pady=4)
+
+        self.dist_val_lbl = tk.Label(dist_box,
+                                      text="--- cm",
+                                      font=gauge_font,
+                                      bg="#0A0E1A", fg="#FF6600")
+        self.dist_val_lbl.pack(pady=(0, 4))
+
+        # Mini graph
+        graph_frame = tk.LabelFrame(center, text=" TREND GRAPH (Last 60 readings) ",
+                                     bg="#0A0E1A", fg="#446688",
+                                     font=label_font, relief="solid", bd=1)
+        graph_frame.pack(fill="both", expand=True, pady=(8, 0))
+
+        self.graph_canvas = tk.Canvas(graph_frame, bg="#060912",
+                                       highlightthickness=0)
+        self.graph_canvas.pack(fill="both", expand=True, padx=4, pady=4)
+
+        # ── Right column: camera feed + stats ──
+        right = tk.Frame(content, bg="#0A0E1A", width=300)
+        right.pack(side="right", fill="y", padx=(8, 0))
+        right.pack_propagate(False)
+
+        cam_frame = tk.LabelFrame(right, text=" CAMERA FEED ",
+                                   bg="#0A0E1A", fg="#446688",
+                                   font=label_font, relief="solid", bd=1)
+        cam_frame.pack(fill="x")
+
+        self.cam_label = tk.Label(cam_frame, bg="#060912",
+                                   text="[ NO CAMERA ]",
+                                   fg="#334455", font=small_font)
+        self.cam_label.pack(fill="x", padx=4, pady=4)
+        self.cam_label.config(width=35, height=15)
+
+        # Stats panel
+        stats_frame = tk.LabelFrame(right, text=" SESSION STATS ",
+                                     bg="#0A0E1A", fg="#446688",
+                                     font=label_font, relief="solid", bd=1)
+        stats_frame.pack(fill="x", pady=(8, 0))
+
+        stats = [
+            ("Max Speed:",     "max_speed_lbl",  "#00FF88"),
+            ("Min Distance:",  "min_dist_lbl",   "#FF6600"),
+            ("Alerts Fired:",  "alert_count_lbl","#FF4444"),
+            ("Data Points:",   "data_pts_lbl",   "#4488CC"),
+            ("Session Time:",  "session_lbl",    "#886644"),
+        ]
+        for label_text, attr, color in stats:
+            row = tk.Frame(stats_frame, bg="#0A0E1A")
+            row.pack(fill="x", padx=8, pady=2)
+            tk.Label(row, text=label_text, bg="#0A0E1A",
+                     fg="#446688", font=small_font, width=14,
+                     anchor="w").pack(side="left")
+            lbl = tk.Label(row, text="---", bg="#0A0E1A",
+                            fg=color, font=("Courier New", 8, "bold"),
+                            anchor="e")
+            lbl.pack(side="right")
+            setattr(self, attr, lbl)
+
+        self.max_speed   = 0.0
+        self.min_dist    = 9999.0
+        self.alert_count = 0
+        self.session_start = time.time()
+
+        self._log("System initialized.")
+        self._log(f"GPIO: {'Available' if GPIO_AVAILABLE else 'Not available (simulation)'}")
+        self._log(f"Audio: {'Available' if AUDIO_AVAILABLE else 'Disabled'}")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    #  SYSTEM CONTROL
+    # ══════════════════════════════════════════════════════════════════════════
+    def toggle_system(self):
+        if not self.running:
+            self.running = True
+            self.start_btn.config(text="⏹  STOP SYSTEM", bg="#330000", fg="#FF4444")
+            self.status_lbl.config(text="● ONLINE", fg="#00FF88")
+            self._log("System STARTED.")
+
+            if not self.sim_mode.get():
+                self._start_camera()
+            else:
+                self._log("Running in SIMULATION mode.")
+        else:
+            self.running = False
+            self.start_btn.config(text="▶  START SYSTEM", bg="#003322", fg="#00FF88")
+            self.status_lbl.config(text="● OFFLINE", fg="#FF4444")
+            self._stop_camera()
+            self._log("System STOPPED.")
+
+    def _start_camera(self):
+        self.cap = cv2.VideoCapture(0)
+        if not self.cap.isOpened():
+            self._log("WARNING: Camera not found. Switching to simulation.")
+            self.sim_mode.set(True)
+            self.cap = None
+            return
+        self.camera_active = True
+        self._log("Camera opened successfully.")
+        t = threading.Thread(target=self._camera_thread, daemon=True)
+        t.start()
+
+    def _stop_camera(self):
+        self.camera_active = False
+        if self.cap:
+            self.cap.release()
+            self.cap = None
+
+    def _camera_thread(self):
+        """Background thread: captures frames, estimates speed & distance."""
+        fps_time = time.time()
+        frame_count = 0
+        while self.camera_active and self.running:
+            ret, frame = self.cap.read()
+            if not ret:
+                continue
+
+            frame_count += 1
+            elapsed = time.time() - fps_time
+            if elapsed > 0:
+                fps = frame_count / elapsed
+                self.speed_est.fps = max(1, fps)
+
+            # Estimate speed & distance
+            speed, annotated = self.speed_est.estimate(frame.copy())
+            dist, annotated  = self.dist_est.estimate(annotated)
+
+            # Put in queue (non-blocking)
+            if not self.frame_queue.full():
+                frame_queue_item = (speed, dist, annotated)
+                self.frame_queue.put(frame_queue_item)
+
+    def _simulate_step(self):
+        """Generate realistic-looking simulation data."""
+        # Simulate speed: gradual acceleration/deceleration
+        self._sim_speed += random.uniform(-3, 5) * self._sim_direction
+        self._sim_speed  = max(0, min(160, self._sim_speed))
+        if random.random() < 0.01:
+            self._sim_direction *= -1
+
+        # Simulate distance: obstacle approaching/receding
+        self._sim_dist += random.uniform(-8, 6)
+        self._sim_dist  = max(20, min(400, self._sim_dist))
+
+        return round(self._sim_speed, 1), round(self._sim_dist, 1)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    #  MAIN UPDATE LOOP
+    # ══════════════════════════════════════════════════════════════════════════
+    def _start_update_loop(self):
+        self._update()
+
+    def _update(self):
+        """Called every UPDATE_INTERVAL ms to refresh the entire UI."""
+        # Update clock
+        self.clock_lbl.config(text=datetime.now().strftime("%Y-%m-%d  %H:%M:%S"))
+
+        if self.running:
+            # Get data
+            if self.sim_mode.get():
+                speed, dist = self._simulate_step()
+            else:
+                try:
+                    speed, dist, frame = self.frame_queue.get_nowait()
+                    self._display_frame(frame)
+                except queue.Empty:
+                    speed = self.speed_kmh.get()
+                    dist  = self.distance_cm.get()
+
+            self.speed_kmh.set(speed)
+            self.distance_cm.set(dist)
+
+            # Update stats
+            self.max_speed = max(self.max_speed, speed)
+            if dist < 900:
+                self.min_dist = min(self.min_dist, dist)
+
+            # Determine alert
+            alert, color = self._compute_alert(speed, dist)
+            self.alert_msg.set(alert)
+            self._set_alert_style(color)
+
+            # Log data
+            self.logger.log(speed, dist, alert)
+            self.speed_data.append(speed)
+            self.dist_data.append(dist)
+            self.speed_data.pop(0)
+            self.dist_data.pop(0)
+
+            # Trigger buzzer if danger
+            self._handle_buzzer(dist)
+
+            # Update all widgets
+            self._draw_speed_gauge(speed)
+            self._draw_dist_gauge(dist)
+            self._draw_graph()
+            self._update_stats()
+            self._update_labels(speed, dist)
+
+        self.after(UPDATE_INTERVAL, self._update)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    #  ALERT LOGIC
+    # ══════════════════════════════════════════════════════════════════════════
+    def _compute_alert(self, speed, dist):
+        if dist <= DANGER_DIST:
+            self.alert_count += 1
+            self._log(f"⚠ DANGER! Distance={dist}cm, Speed={speed}km/h")
+            return f"🔴  COLLISION DANGER!  Distance: {dist} cm", "#FF2200"
+        elif dist <= WARNING_DIST:
+            return f"🟡  CAUTION — Obstacle at {dist} cm", "#FFAA00"
+        elif speed > SPEED_LIMIT:
+            self.alert_count += 1
+            self._log(f"⚠ OVER SPEED! {speed} km/h")
+            return f"⚡  OVER SPEED LIMIT — {speed} km/h", "#FF6600"
+        else:
+            return f"✅  All Systems Normal  |  {speed} km/h  |  {dist} cm", "#00FF88"
+
+    def _set_alert_style(self, color):
+        bg = "#1A0000" if color in ("#FF2200", "#FF6600") else \
+             "#1A1000" if color == "#FFAA00" else "#001A0D"
+        self.alert_frame.config(bg=bg)
+        self.alert_lbl.config(bg=bg, fg=color)
+
+    def _handle_buzzer(self, dist):
+        if not GPIO_AVAILABLE:
+            return
+        now = time.time()
+        if dist <= DANGER_DIST and now - self.last_buzz_time > 0.3:
+            GPIO.output(BUZZER_PIN, True)
+            time.sleep(0.1)
+            GPIO.output(BUZZER_PIN, False)
+            self.last_buzz_time = now
+        elif dist <= WARNING_DIST and now - self.last_buzz_time > 1.0:
+            GPIO.output(BUZZER_PIN, True)
+            time.sleep(0.05)
+            GPIO.output(BUZZER_PIN, False)
+            self.last_buzz_time = now
+
+    # ══════════════════════════════════════════════════════════════════════════
+    #  GAUGE DRAWING
+    # ══════════════════════════════════════════════════════════════════════════
+    def _draw_gauge(self, canvas, value, max_val, unit, arc_color,
+                     danger_thresh=None, warn_thresh=None):
+        """Generic arc-style gauge."""
+        canvas.delete("all")
+        w = canvas.winfo_width()
+        h = canvas.winfo_height()
+        if w < 10 or h < 10:
+            return
+
+        cx    = w // 2
+        cy    = int(h * 0.60)
+        r     = min(cx, cy) - 12
+        start = 210   # degrees
+        span  = 300   # degrees arc
+
+        # Background arc
+        canvas.create_arc(cx-r, cy-r, cx+r, cy+r,
+                           start=start, extent=-span,
+                           outline="#1A2433", style="arc", width=12)
+
+        # Colored arc (value)
+        ratio = min(value / max_val, 1.0)
+        angle = span * ratio
+
+        # Determine color
+        if danger_thresh and value >= danger_thresh:
+            color = "#FF2200"
+        elif warn_thresh and value >= warn_thresh:
+            color = "#FFAA00"
+        else:
+            color = arc_color
+
+        if angle > 0:
+            canvas.create_arc(cx-r, cy-r, cx+r, cy+r,
+                               start=start, extent=-angle,
+                               outline=color, style="arc", width=12,
+                               dash=() )
+
+        # Needle
+        needle_angle = math.radians(start - angle)
+        nx = cx + (r - 16) * math.cos(needle_angle)
+        ny = cy - (r - 16) * math.sin(needle_angle)
+        canvas.create_line(cx, cy, nx, ny, fill=color, width=3)
+        canvas.create_oval(cx-5, cy-5, cx+5, cy+5, fill=color, outline="")
+
+        # Tick marks
+        for i in range(11):
+            a  = math.radians(start - (span / 10) * i)
+            x1 = cx + (r - 20) * math.cos(a)
+            y1 = cy - (r - 20) * math.sin(a)
+            x2 = cx + (r - 28) * math.cos(a)
+            y2 = cy - (r - 28) * math.sin(a)
+            canvas.create_line(x1, y1, x2, y2, fill="#2A3A4A", width=1)
+
+            # Tick labels at each 10%
+            if i % 2 == 0:
+                lx = cx + (r - 38) * math.cos(a)
+                ly = cy - (r - 38) * math.sin(a)
+                canvas.create_text(lx, ly,
+                                    text=str(int(max_val * i / 10)),
+                                    fill="#334455", font=("Courier New", 7))
+
+    def _draw_speed_gauge(self, speed):
+        self._draw_gauge(self.speed_canvas, speed, MAX_SPEED, "km/h",
+                          "#00FF88", SPEED_LIMIT + 20, SPEED_LIMIT)
+
+    def _draw_dist_gauge(self, dist):
+        # For distance: danger is SMALL, so invert display
+        display_dist = max(0, min(dist, 400))
+        # Show as "closeness" risk: 400 - dist (higher bar = closer = more danger)
+        risk = max(0, 400 - display_dist)
+        self._draw_gauge(self.dist_canvas, risk, 380, "cm",
+                          "#FF6600", 400 - DANGER_DIST, 400 - WARNING_DIST)
+
+    def _update_labels(self, speed, dist):
+        spd_color = "#FF2200" if speed > SPEED_LIMIT + 20 else \
+                    "#FFAA00" if speed > SPEED_LIMIT else "#00FF88"
+        self.speed_val_lbl.config(text=f"{speed:.1f} km/h", fg=spd_color)
+
+        dist_color = "#FF2200" if dist <= DANGER_DIST else \
+                     "#FFAA00" if dist <= WARNING_DIST else "#FF6600"
+        dist_str = f"{dist:.0f} cm" if dist < 900 else "--- cm"
+        self.dist_val_lbl.config(text=dist_str, fg=dist_color)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    #  TREND GRAPH
+    # ══════════════════════════════════════════════════════════════════════════
+    def _draw_graph(self):
+        c = self.graph_canvas
+        c.delete("all")
+        w = c.winfo_width()
+        h = c.winfo_height()
+        if w < 20 or h < 20:
+            return
+
+        mid    = h // 2
+        pad    = 30
+        n      = len(self.speed_data)
+
+        # Grid lines
+        for i in range(5):
+            y = pad + (h - 2 * pad) * i // 4
+            c.create_line(pad, y, w - pad, y, fill="#111827", dash=(2, 4))
+
+        # Axis labels
+        c.create_text(10, pad,      text=f"{MAX_SPEED}", fill="#334455", font=("Courier New", 6))
+        c.create_text(10, h//2,     text="0",            fill="#334455", font=("Courier New", 6))
+        c.create_text(w-10, pad,    text="400",          fill="#334455", font=("Courier New", 6), anchor="e")
+
+        # Speed line (green)
+        def to_coords_speed(idx, val):
+            x = pad + (w - 2*pad) * idx / (n - 1)
+            y = h - pad - (h - 2*pad) * (val / MAX_SPEED)
+            return x, y
+
+        # Distance line (orange) — shown on right scale
+        def to_coords_dist(idx, val):
+            x = pad + (w - 2*pad) * idx / (n - 1)
+            y = h - pad - (h - 2*pad) * (min(val, 400) / 400)
+            return x, y
+
+        # Draw speed
+        pts_s = [to_coords_speed(i, v) for i, v in enumerate(self.speed_data)]
+        for i in range(1, len(pts_s)):
+            c.create_line(pts_s[i-1][0], pts_s[i-1][1],
+                           pts_s[i][0],   pts_s[i][1],
+                           fill="#00FF88", width=2)
+
+        # Draw distance
+        pts_d = [to_coords_dist(i, v) for i, v in enumerate(self.dist_data)]
+        for i in range(1, len(pts_d)):
+            c.create_line(pts_d[i-1][0], pts_d[i-1][1],
+                           pts_d[i][0],   pts_d[i][1],
+                           fill="#FF6600", width=2, dash=(4, 2))
+
+        # Legend
+        c.create_line(pad, h-10, pad+20, h-10, fill="#00FF88", width=2)
+        c.create_text(pad+25, h-10, text="Speed (km/h)",
+                       fill="#00FF88", font=("Courier New", 7), anchor="w")
+        c.create_line(pad+120, h-10, pad+140, h-10,
+                       fill="#FF6600", width=2, dash=(4, 2))
+        c.create_text(pad+145, h-10, text="Distance (cm)",
+                       fill="#FF6600", font=("Courier New", 7), anchor="w")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    #  CAMERA DISPLAY
+    # ══════════════════════════════════════════════════════════════════════════
+    def _display_frame(self, frame):
+        try:
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            lw = self.cam_label.winfo_width()
+            lh = self.cam_label.winfo_height()
+            if lw > 10 and lh > 10:
+                img     = Image.fromarray(frame_rgb).resize((lw, lh))
+                imgtk   = ImageTk.PhotoImage(image=img)
+                self.cam_label.imgtk = imgtk
+                self.cam_label.config(image=imgtk, text="")
+        except Exception:
+            pass
+
+    # ══════════════════════════════════════════════════════════════════════════
+    #  STATS & LOG
+    # ══════════════════════════════════════════════════════════════════════════
+    def _update_stats(self):
+        elapsed = time.time() - self.session_start
+        mins    = int(elapsed // 60)
+        secs    = int(elapsed % 60)
+        self.max_speed_lbl.config(text=f"{self.max_speed:.1f} km/h")
+        md = f"{self.min_dist:.0f} cm" if self.min_dist < 9000 else "---"
+        self.min_dist_lbl.config(text=md)
+        self.alert_count_lbl.config(text=str(self.alert_count))
+        self.data_pts_lbl.config(text=str(len(self.logger.records)))
+        self.session_lbl.config(text=f"{mins:02d}:{secs:02d}")
+
+    def _log(self, msg):
+        ts = datetime.now().strftime("%H:%M:%S")
+        self.log_text.config(state="normal")
+        self.log_text.insert("end", f"[{ts}] {msg}\n")
+        self.log_text.see("end")
+        self.log_text.config(state="disabled")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    #  CALIBRATION & EXPORT
+    # ══════════════════════════════════════════════════════════════════════════
+    def _apply_calibration(self):
+        try:
+            ppm = int(self.ppm_var.get())
+            kw  = float(self.kw_var.get())
+            self.speed_est.ppm          = ppm
+            self.dist_est.known_width_cm = kw
+            self._log(f"Calibration applied: PPM={ppm}, KnownWidth={kw}cm")
+        except ValueError:
+            messagebox.showerror("Error", "Invalid calibration values.")
+
+    def export_data(self):
+        path = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV files", "*.csv")],
+            initialfile=f"car_safety_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        )
+        if path:
+            success = self.logger.export_csv(path)
+            if success:
+                self._log(f"Data exported: {os.path.basename(path)}")
+                messagebox.showinfo("Export", f"Data saved to:\n{path}")
+            else:
+                messagebox.showwarning("Export", "No data to export yet.")
+
+    def _reset_logger(self):
+        self.logger        = DataLogger()
+        self.max_speed     = 0.0
+        self.min_dist      = 9999.0
+        self.alert_count   = 0
+        self.session_start = time.time()
+        self._log("Logger reset.")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    #  CLEANUP
+    # ══════════════════════════════════════════════════════════════════════════
+    def on_close(self):
+        self.running = False
+        self._stop_camera()
+        cleanup_gpio()
+        self.destroy()
+
+
+# ─── Entry Point ──────────────────────────────────────────────────────────────
+if __name__ == "__main__":
+    app = CarSafetyApp()
+    app.protocol("WM_DELETE_WINDOW", app.on_close)
+    app.mainloop()
